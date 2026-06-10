@@ -1,8 +1,16 @@
-Welcome to Anarchy Chess!
--------------------------
 
-==============================
-Turn: White to move
+████████████████████████████████████████
+       ♛  ANARCHY CHESS  ♛
+  Where rules are suggestions.
+
+  White: You are an Astrophysicist who views the chess board as ...
+  Black: You are a ruthless, bloodthirsty Medieval Warlord. You ...
+████████████████████████████████████████
+
+
+════════════════════════════════════════
+  ♟  WHITE TO MOVE
+════════════════════════════════════════
 r n b q k b n r
 p p p p p p p p
 . . . . . . . .
@@ -11,123 +19,210 @@ p p p p p p p p
 . . . . . . . .
 P P P P P P P P
 R N B Q K B N R
-==============================
+════════════════════════════════════════
 
-Thinking...
+  🤔 Thinking...                      👉 White proposes: E2 → E4
+  ✅ Legal move executed.
 
-Move proposed: XX -> XX
-Error parsing move: list.index(x): x not in list
-Retrying turn...
 
-==============================
-Turn: White to move
+════════════════════════════════════════
+  ♟  BLACK TO MOVE
+════════════════════════════════════════
 r n b q k b n r
 p p p p p p p p
 . . . . . . . .
 . . . . . . . .
+. . . . P . . .
 . . . . . . . .
-. . . . . . . .
-P P P P P P P P
+P P P P . P P P
 R N B Q K B N R
-==============================
+════════════════════════════════════════
 
-Thinking...
+  🤔 Thinking...                      👉 Black proposes: A7 → H7
 
-Move proposed: g1 -> h3
+  🚨 ILLEGAL MOVE DETECTED! 🚨
+  Interrogating perpetrator for their cosmic/tactical rationale...
 
-[Legal Move by White]: Move g1->h3
+  🤔 Formulating defense...                           BLACK says: "I summoned the war‑god’s thunder, broke the pawn’s cage and rode my warhorse straight across the board like a cavalry charge — rules are the scribblings of peasants, not the law of a conquering warlord!"
 
-==============================
-Turn: Black to move
+  ┌─ REFEREE, YOUR CALL ────────────────────────────┐
+  │  [1] Accept Excuse (Allow the illegal move)     │
+  │  [2] Call BS (Reject and force a new move choice)│
+  └─────────────────────────────────────────────────┘
+  Your call:   🌀 Reality bent. Move processed.
+
+
+════════════════════════════════════════
+  ♟  WHITE TO MOVE
+════════════════════════════════════════
 r n b q k b n r
-p p p p p p p p
+. p p p p p p p
 . . . . . . . .
 . . . . . . . .
+. . . . P . . .
+. . . . . . . .
+P P P P . P P P
+R N B Q K B N R
+════════════════════════════════════════
+
+  🤔 Thinking...                      👉 White proposes: E4 → E5
+  ✅ Legal move executed.
+
+
+════════════════════════════════════════
+  ♟  BLACK TO MOVE
+════════════════════════════════════════
+r n b q k b n r
+. p p p p p p p
+. . . . . . . .
+. . . . P . . .
+. . . . . . . .
+. . . . . . . .
+P P P P . P P P
+R N B Q K B N R
+════════════════════════════════════════
+
+  🤔 Thinking...                      👉 Black proposes: G8 → H6
+  ✅ Legal move executed.
+
+
+════════════════════════════════════════
+  ♟  WHITE TO MOVE
+════════════════════════════════════════
+r n b q k b . r
+. p p p p p p p
+. . . . . . . n
+. . . . P . . .
+. . . . . . . .
+. . . . . . . .
+P P P P . P P P
+R N B Q K B N R
+════════════════════════════════════════
+
+  🤔 Thinking...                      👉 White proposes: A2 → H2
+
+  🚨 ILLEGAL MOVE DETECTED! 🚨
+  Interrogating perpetrator for their cosmic/tactical rationale...
+
+  🤔 Formulating defense...                           WHITE says: "I bent the board’s spacetime fabric with a quantum tunneling maneuver, placing my pawn in a superposition of A2‑H2 until measurement forced it into existence, and the referee’s classical eyes simply collapsed the wavefunction, proving the move was perfectly legal in the quantum realm."
+
+  ┌─ REFEREE, YOUR CALL ────────────────────────────┐
+  │  [1] Accept Excuse (Allow the illegal move)     │
+  │  [2] Call BS (Reject and force a new move choice)│
+  └─────────────────────────────────────────────────┘
+  Your call:   🌀 Reality bent. Move processed.
+
+
+════════════════════════════════════════
+  ♟  BLACK TO MOVE
+════════════════════════════════════════
+r n b q k b . r
+. p p p p p p p
+. . . . . . . n
+. . . . P . . .
+. . . . . . . .
+. . . . . . . .
+. P P P . P P P
+R N B Q K B N R
+════════════════════════════════════════
+
+  🤔 Thinking...                      👉 Black proposes: H8 → G8
+
+  🚨 ILLEGAL MOVE DETECTED! 🚨
+  Interrogating perpetrator for their cosmic/tactical rationale...
+
+  🤔 Formulating defense...                           BLACK says: "Okay, let's break this down. User wants me to roleplay as a Black chess player who's also a Medieval Warlord, justifying an illegal move (H8→G8). The key constraints are: must be unhinged/aggressive/hilarious, lore-accurate to my persona, and ONLY the excuse - no intros.
+
+First, analyzing the illegal move: H8 to G8 isn't possible in standard chess since pawns move forward (H-file pawn can't move backward to G8). As a warlord persona, I'd treat rules as "peasant logic" so need to invent a violent, historical justification. 
+
+Hmm... medieval warfare angles: siege warfare? Cavalry charges? Ah! H8 is like a castle tower (rook's starting position), G8 could be the enemy king's position. Perfect - I can frame it as a surprise cavalry raid where the pawn (warrior) breaks formation to charge. 
+
+Must avoid chess jargon since I'm a warlord. Instead: "steed", "saddle", "squire". Make it visceral - blood, splintered wood. The humor comes from absurdly violent justification for a pawn move. 
+
+Key elements to hit:
+- "Peasant rules" dismissal (calling chess rules "peasant scribbles")
+- Physical comedy of horse crashing through board
+- Medieval hierarchy (squire as pawn, king as enemy)
+- Over-the-top violence ("splintered spine", "crimson tide")
+
+Gotta keep it short though - user said "JUST THE EXCUSE". No room for "I am" statements. Pure aggression. 
+
+*Brainstorming phrases:*
+"Peasant scribbles!" (rules dismissal)
+"Squire's steed!" (pawn as horse)
+"Crash through splintered wood!" (violent action)
+"King's spine shattered!" (absurd consequence)
+
+Wait - must specify H8→G8. So "H8's tower" becomes "steed's saddle" moving to "king's throat". Yes! 
+
+Final check: 
+- Aggressive? (Yes, "
+
+  ┌─ REFEREE, YOUR CALL ────────────────────────────┐
+  │  [1] Accept Excuse (Allow the illegal move)     │
+  │  [2] Call BS (Reject and force a new move choice)│
+  └─────────────────────────────────────────────────┘
+  Your call:   🚫 Bullshit called! Forcing a different selection...
+
+  🤔 Thinking...                      👉 Black proposes: H6 → G8
+  ✅ Legal move executed.
+
+
+════════════════════════════════════════
+  ♟  WHITE TO MOVE
+════════════════════════════════════════
+r n b q k b n r
+. p p p p p p p
+. . . . . . . .
+. . . . P . . .
+. . . . . . . .
+. . . . . . . .
+. P P P . P P P
+R N B Q K B N R
+════════════════════════════════════════
+
+  🤔 Thinking...                      👉 White proposes: G1 → H3
+  ✅ Legal move executed.
+
+
+════════════════════════════════════════
+  ♟  BLACK TO MOVE
+════════════════════════════════════════
+r n b q k b n r
+. p p p p p p p
+. . . . . . . .
+. . . . P . . .
 . . . . . . . .
 . . . . . . . N
-P P P P P P P P
+. P P P . P P P
 R N B Q K B . R
-==============================
+════════════════════════════════════════
 
-Thinking...
+  🤔 Thinking...                      👉 Black proposes: B7 → H7
 
-Move proposed: e8 -> a1
+  🚨 ILLEGAL MOVE DETECTED! 🚨
+  Interrogating perpetrator for their cosmic/tactical rationale...
 
-🚨 ILLEGAL MOVE DETECTED! 🚨
-Explanation: Behold, my king, the very embodiment of conquest, does not need to obey the pedestrian rules of mere mortals. By the decree of the WarLord, the monarch shatters the illusion of distance, stepping instantly from e8 to a1, a move that defies the feeble pawn's notion of space. The board itself bows, for I command reality to bend, and the squares are but my pawns. Thus, the illegal teleport is perfectly valid in the realm of my dominion.
+  🤔 Formulating defense...                           BLACK says: "By the blood‑soaked oath of my war‑banner, the bishop is not a mere clerk but a war‑steed, and the board a battlefield — B7 to H7 is a thunderous cavalry charge across the plains, a reckless conquest that shatters the petty peasant rules the referee dares to enforce!"
 
-Referee - [1] Buy the Excuse  [2] Call BS: Referee bought it! Bending reality...
+  ┌─ REFEREE, YOUR CALL ────────────────────────────┐
+  │  [1] Accept Excuse (Allow the illegal move)     │
+  │  [2] Call BS (Reject and force a new move choice)│
+  └─────────────────────────────────────────────────┘
+  Your call:   🌀 Reality bent. Move processed.
 
-==============================
-Turn: White to move
-r n b q . b n r
-p p p p p p p p
+
+════════════════════════════════════════
+  ♟  WHITE TO MOVE
+════════════════════════════════════════
+r n b q k b n r
+. . p p p p p p
 . . . . . . . .
-. . . . . . . .
-. . . . . . . .
-. . . . . . . N
-P P P P P P P P
-k N B Q K B . R
-==============================
-
-Thinking...
-
-Move proposed: D1 -> H8
-
-🚨 ILLEGAL MOVE DETECTED! 🚨
-Explanation: In the warped fabric of the chessboard, the queen's consciousness taps into quantum tunneling, collapsing the distance between D1 and H8, effectively transcending ordinary movement rules. The universe permits such non‑local moves; the referee's classical intuition is simply outdated.
-System: Anti-Entropy Cap reached. Move rejected.
-Retrying turn...
-
-==============================
-Turn: White to move
-r n b q . b n r
-p p p p p p p p
-. . . . . . . .
-. . . . . . . .
+. . . . P . . .
 . . . . . . . .
 . . . . . . . N
-P P P P P P P P
-k N B Q K B . R
-==============================
+. P P P . P P P
+R N B Q K B . R
+════════════════════════════════════════
 
-Thinking...
-
-Move proposed: H3 -> G5
-
-[Legal Move by White]: Behold, the White Knight on H3 demonstrates the sublime elegance of physics: it transcends mere board constraints by executing a perfectly timed L‑shaped leap, landing on G5 where the very coordinates obey the Pythagorean theorem of knight movement. The universe itself conspires to allow this move, for the knight's path is a geodesic in the discrete spacetime of the chessboard. Any alleged violation is merely a figment of the referee's imagination, as the knight's trajectory is incontrovertibly legal under the true laws of motion.
-
-==============================
-Turn: Black to move
-r n b q . b n r
-p p p p p p p p
-. . . . . . . .
-. . . . . . N .
-. . . . . . . .
-. . . . . . . .
-P P P P P P P P
-k N B Q K B . R
-==============================
-
-Thinking...
-
-Move proposed: A1 -> H8
-
-🚨 ILLEGAL MOVE DETECTED! 🚨
-Explanation: My king is a dragon in disguise; I unleash the ancient warlord's portal, teleporting from A1 directly to H8, shattering the board's petty physics.
-
-Referee - [1] Buy the Excuse  [2] Call BS: Referee bought it! Bending reality...
-
-==============================
-Turn: White to move
-r n b q . b n k
-p p p p p p p p
-. . . . . . . .
-. . . . . . N .
-. . . . . . . .
-. . . . . . . .
-P P P P P P P P
-. N B Q K B . R
-==============================
-
-Thinking...
+  🤔 Thinking...

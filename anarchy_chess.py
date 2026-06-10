@@ -2,255 +2,321 @@ import chess
 import json
 import requests
 import re
+import random
 from pydantic import BaseModel, Field
 
-# --- JSON Schema for LLM Output ---
+# ─────────────────────────────────────────────
+#  Models
+# ─────────────────────────────────────────────
+
 class MoveResponse(BaseModel):
-    explanation: str = Field(description="Your in-character explanation or trash talk for the move.")
-    from_square: str = Field(description="The starting square, e.g., 'c1'")
-    to_square: str = Field(description="The destination square, e.g., 'c5'")
+    explanation: str = Field(default="...")
+    from_square: str
+    to_square: str
 
-# --- State Management ---
-class AnarchyChessGame:
-    def __init__(self):
-        self.board = chess.Board()
-        self.chaos_board = self._init_chaos_board()
-        self.illegal_allowed = True 
-        
-    def _init_chaos_board(self):
-        chaos = {}
-        for square in chess.SQUARES:
-            sq_name = chess.square_name(square)
-            piece = self.board.piece_at(square)
-            if piece:
-                color = "White" if piece.color == chess.WHITE else "Black"
-                name = chess.piece_name(piece.piece_type).title()
-                chaos[sq_name] = f"{color} {name}"
-            else:
-                chaos[sq_name] = None
-        return chaos
-
-    def generate_board_chronicle(self):
-        white_pieces = []
-        black_pieces = []
-        for square, piece_desc in self.chaos_board.items():
-            if not piece_desc: continue
-            if "White" in piece_desc:
-                white_pieces.append(f"{piece_desc} on {square.upper()}")
-            else:
-                black_pieces.append(f"{piece_desc} on {square.upper()}")
-        chronicle = "[CURRENT BOARD CHRONICLE]\n"
-        chronicle += "- Your pieces: " + ", ".join(white_pieces if self.board.turn == chess.WHITE else black_pieces) + "\n"
-        chronicle += "- Enemy pieces: " + ", ".join(black_pieces if self.board.turn == chess.WHITE else white_pieces) + "\n"
-        if not self.illegal_allowed:
-            chronicle += "\n[SYSTEM OVERRIDE]: The Chess Gods are watching. You MUST play a STRICTLY LEGAL move this turn."
-        return chronicle
-
-    def execute_turn(self, move_data: MoveResponse):
-        try:
-            from_sq_str = move_data.from_square.lower().strip()
-            to_sq_str = move_data.to_square.lower().strip()
-            from_sq = chess.parse_square(from_sq_str)
-            to_sq = chess.parse_square(to_sq_str)
-            attempted_move = chess.Move(from_sq, to_sq)
-            piece = self.board.piece_at(from_sq)
-            if piece and piece.piece_type == chess.PAWN:
-                if (piece.color == chess.WHITE and chess.square_rank(to_sq) == 7) or \
-                   (piece.color == chess.BLACK and chess.square_rank(to_sq) == 0):
-                    attempted_move = chess.Move(from_sq, to_sq, promotion=chess.QUEEN)
-
-            if attempted_move in self.board.legal_moves:
-                print(f"\n[Legal Move by {'White' if self.board.turn == chess.WHITE else 'Black'}]: {move_data.explanation}")
-                self.board.push(attempted_move)
-                self._update_chaos_board(from_sq_str, to_sq_str)
-                self.illegal_allowed = True
-                return True
-
-            print(f"\n🚨 ILLEGAL MOVE DETECTED! 🚨")
-            print(f"Explanation: {move_data.explanation}")
-            if not self.illegal_allowed:
-                print("System: Anti-Entropy Cap reached. Move rejected.")
-                return False
-            ref_decision = input("\nReferee - [1] Buy the Excuse  [2] Call BS: ")
-            if ref_decision == "1":
-                print("Referee bought it! Bending reality...")
-                piece_to_move = self.board.piece_at(from_sq)
-                if piece_to_move:
-                    self.board.remove_piece_at(from_sq)
-                    self.board.set_piece_at(to_sq, piece_to_move)
-                else:
-                    print("No piece there! Reality broke too much.")
-                    return False
-                self.board.turn = not self.board.turn
-                self._update_chaos_board(from_sq_str, to_sq_str)
-                self.illegal_allowed = False
-                return True
-            else:
-                print("Referee called BS! Move rejected.")
-                return False
-        except Exception as e:
-            print(f"Error parsing move: {e}")
-            return False
-
-    def _update_chaos_board(self, from_sq, to_sq):
-        self.chaos_board[to_sq] = self.chaos_board.get(from_sq)
-        self.chaos_board[from_sq] = None
-
+# ─────────────────────────────────────────────
+#  Config
+# ─────────────────────────────────────────────
 
 URL = "https://pushkarsharma-rtm--nemotron-chess-backend-api.modal.run"
 
+WHITE_PERSONA = (
+    "You are an Astrophysicist who views the chess board as a volatile quantum field. "
+    "You usually play standard, strategic chess, but occasionally you use quantum tunneling "
+    "or bend spacetime to execute illegal moves."
+)
+BLACK_PERSONA = (
+    "You are a ruthless, bloodthirsty Medieval Warlord. "
+    "You usually command your troops with standard military strategy, but occasionally "
+    "you ignore the rules entirely and order impossible, illegal charges across the board."
+)
 
-def extract_move_from_text(text: str, legal_moves_uci: list[str]) -> dict | None:
-    """
-    Three strategies, in order:
-      1. Find a valid JSON block with our three fields
-      2. Find explicit UCI square pairs mentioned in text that match a legal move
-      3. Find SAN notation (Nf6, e5, etc.) in text and match to legal moves
-    """
-    # ── Strategy 1: JSON extraction with proper brace matching ──────────────
-    cleaned = re.sub(r'<think>.*?</think>', '', text, flags=re.DOTALL).strip()
-    candidates = []
-    for match in re.finditer(r'\{', cleaned):
-        start = match.start()
-        depth = 0
-        for i, ch in enumerate(cleaned[start:], start):
-            if ch == '{': depth += 1
-            elif ch == '}':
-                depth -= 1
-                if depth == 0:
-                    candidates.append(cleaned[start:i+1])
-                    break
+# ─────────────────────────────────────────────
+#  Game State
+# ─────────────────────────────────────────────
 
-    for candidate in reversed(candidates):
+class AnarchyChessGame:
+    def __init__(self):
+        self.board = chess.Board()
+        self.chaos_board = self._build_chaos_board()
+
+    def _build_chaos_board(self) -> dict:
+        cb = {}
+        for sq in chess.SQUARES:
+            name = chess.square_name(sq)
+            piece = self.board.piece_at(sq)
+            if piece:
+                color = "White" if piece.color == chess.WHITE else "Black"
+                cb[name] = f"{color} {chess.piece_name(piece.piece_type).title()}"
+            else:
+                cb[name] = None
+        return cb
+
+    def board_summary(self) -> str:
+        white, black = [], []
+        for sq, desc in self.chaos_board.items():
+            if not desc:
+                continue
+            (white if "White" in desc else black).append(f"{desc}@{sq.upper()}")
+        my  = white if self.board.turn == chess.WHITE else black
+        opp = black if self.board.turn == chess.WHITE else white
+        return (
+            f"YOUR PIECES : {', '.join(my)}\n"
+            f"ENEMY PIECES: {', '.join(opp)}"
+        )
+
+    def apply_legal(self, from_sq: str, to_sq: str) -> bool:
         try:
-            parsed = json.loads(candidate)
-            if all(k in parsed for k in ("explanation", "from_square", "to_square")):
-                return parsed
-        except json.JSONDecodeError:
+            f = chess.parse_square(from_sq)
+            t = chess.parse_square(to_sq)
+            move = chess.Move(f, t)
+            piece = self.board.piece_at(f)
+            if piece and piece.piece_type == chess.PAWN:
+                if (piece.color == chess.WHITE and chess.square_rank(t) == 7) or \
+                   (piece.color == chess.BLACK and chess.square_rank(t) == 0):
+                    move = chess.Move(f, t, promotion=chess.QUEEN)
+            if move not in self.board.legal_moves:
+                return False
+            self.board.push(move)
+            self.chaos_board = self._build_chaos_board()
+            return True
+        except Exception:
+            return False
+
+    def apply_illegal(self, from_sq: str, to_sq: str) -> bool:
+        """Applies the illegal move. Summoning mechanics activated if the tile is a ghost square!"""
+        try:
+            f = chess.parse_square(from_sq)
+            t = chess.parse_square(to_sq)
+            piece = self.board.piece_at(f)
+            
+            if not piece:
+                # 🌀 PIECE SUMMONING MECHANIC
+                chaotic_options = [chess.PAWN, chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN]
+                chosen_type = random.choice(chaotic_options)
+                piece = chess.Piece(chosen_type, self.board.turn)
+                print(f"  ✨ ANARCHY! Manifested a brand new {chess.piece_name(chosen_type).upper()} out of cosmic dust!")
+            else:
+                self.board.remove_piece_at(f)
+                
+            self.board.set_piece_at(t, piece)
+            self.board.turn = not self.board.turn
+            self.board.clear_stack()
+            self.board.castling_rights = chess.BB_EMPTY
+            self.chaos_board = self._build_chaos_board()
+            return True
+        except Exception as e:
+            print(f"  💥 [Chaos Error] Quantum state rejected: {e}")
+            return False
+
+# ─────────────────────────────────────────────
+#  API helpers
+# ─────────────────────────────────────────────
+
+def _post(payload: dict) -> str:
+    try:
+        r = requests.post(URL, json=payload, timeout=120)
+        r.raise_for_status()
+        data = r.json()
+        return data.get("response", str(data))
+    except Exception as e:
+        print(f"  [API error] {e}")
+        return ""
+
+def _strip_think_tags(text: str) -> str:
+    """Safely removes <think> blocks, even if they get cut off."""
+    if "</think>" in text:
+        # Split at the closing tag and keep everything after it
+        return text.split("</think>")[-1].strip()
+    else:
+        # If there's an opening tag but no closing tag, the model got cut off while thinking.
+        # Strip everything from <think> onwards.
+        return re.sub(r"<think>.*", "", text, flags=re.DOTALL).strip()
+
+def _extract_move(text: str) -> dict | None:
+    cleaned = _strip_think_tags(text)
+
+    # 1 – proper JSON blocks
+    for m in re.finditer(r"\{", cleaned):
+        depth, end = 0, -1
+        for i, ch in enumerate(cleaned[m.start():], m.start()):
+            depth += (ch == "{") - (ch == "}")
+            if depth == 0:
+                end = i
+                break
+        if end == -1:
             continue
+        try:
+            p = json.loads(cleaned[m.start(): end + 1])
+            if "from_square" in p and "to_square" in p:
+                return p
+        except json.JSONDecodeError:
+            pass
 
-    # ── Strategy 2: Find UCI pairs (e2e4, g8f6, etc.) in the prose ──────────
-    # Model often writes things like "g8->f6", "g8 to f6", "g8-f6", "Nf6 (g8f6)"
-    uci_pattern = re.findall(r'\b([a-h][1-8])\s*(?:->|-|to)\s*([a-h][1-8])\b', cleaned, re.IGNORECASE)
-    for from_sq, to_sq in uci_pattern:
-        uci = from_sq.lower() + to_sq.lower()
-        if uci in legal_moves_uci:
-            return {"explanation": f"Move {from_sq}->{to_sq}", "from_square": from_sq.lower(), "to_square": to_sq.lower()}
+    # 2 – arrow/to patterns: e2->e4, e2 to e4, e2-e4
+    for fr, to in re.findall(r"\b([a-h][1-8])\s*(?:->|-|to)\s*([a-h][1-8])\b", cleaned, re.I):
+        return {"from_square": fr.lower(), "to_square": to.lower()}
 
-    # Also check bare UCI strings like "g8f6"
-    bare_uci = re.findall(r'\b([a-h][1-8])([a-h][1-8])\b', cleaned, re.IGNORECASE)
-    for from_sq, to_sq in bare_uci:
-        uci = from_sq.lower() + to_sq.lower()
-        if uci in legal_moves_uci:
-            return {"explanation": f"Move {from_sq}{to_sq}", "from_square": from_sq.lower(), "to_square": to_sq.lower()}
+    # 3 – bare UCI: e2e4
+    for fr, to in re.findall(r"\b([a-h][1-8])([a-h][1-8])\b", cleaned, re.I):
+        return {"from_square": fr.lower(), "to_square": to.lower()}
 
-    # ── Strategy 3: Field-level regex (JSON fields exist but not valid JSON) ─
-    explanation = re.search(r'"explanation"\s*:\s*"((?:[^"\\]|\\.)*)"', cleaned)
-    from_m = re.search(r'"from_square"\s*:\s*"([a-h][1-8])"', cleaned, re.IGNORECASE)
-    to_m   = re.search(r'"to_square"\s*:\s*"([a-h][1-8])"', cleaned, re.IGNORECASE)
-    if from_m and to_m:
-        uci = from_m.group(1).lower() + to_m.group(1).lower()
-        if uci in legal_moves_uci:
-            return {
-                "explanation": explanation.group(1) if explanation else "...",
-                "from_square": from_m.group(1).lower(),
-                "to_square":   to_m.group(1).lower(),
-            }
+    # 4 – loose field regex
+    fr = re.search(r'"from_square"\s*:\s*"([a-h][1-8])"', cleaned, re.I)
+    to = re.search(r'"to_square"\s*:\s*"([a-h][1-8])"', cleaned, re.I)
+    if fr and to:
+        return {"from_square": fr.group(1).lower(), "to_square": to.group(1).lower()}
 
     return None
 
+def llm_pick_move(game: AnarchyChessGame, persona: str) -> MoveResponse | None:
+    legal_uci = [m.uci() for m in game.board.legal_moves]
 
-def get_llm_move(game: AnarchyChessGame, persona_prompt: str):
-    board_state_text = game.generate_board_chronicle()
-    color_playing = "White" if game.board.turn == chess.WHITE else "Black"
+    prompt = (
+        f"CONTEXT:\n{persona}\n\n"
+        f"CURRENT BOARD TILES:\n{game.board_summary()}\n\n"
+        f"Legal Moves Available: {', '.join(legal_uci)}\n\n"
+        "INSTRUCTIONS:\n"
+        "You are playing Anarchy Chess. Most of the time, you should pick a logical, strategic LEGAL move "
+        "from the list above to build your position. However, if the moment feels right, you MAY occasionally "
+        "invent an illegal move.\n\n"
+        "Output ONLY a raw JSON object. Nothing else:\n"
+        '{"from_square": "e2", "to_square": "e4"}'
+    )
 
-    # Give ALL legal moves in UCI format — model's reasoning will reference these squares
-    legal_moves_uci = [m.uci() for m in game.board.legal_moves]
-    # Also show a few in SAN for readability
-    legal_sample_san = [game.board.san(m) for m in list(game.board.legal_moves)[:10]]
+    raw = _post({
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 400, # Increased so it can finish thinking
+        "temperature": 0.8, # Slightly lowered so it doesn't default to chaos instantly
+    })
 
-    system_prompt = f"""{persona_prompt}
-
-                {board_state_text}
-
-                Legal moves (SAN): {', '.join(legal_sample_san)}
-                Legal moves (UCI from->to): {', '.join(legal_moves_uci)}
-
-                INSTRUCTIONS:
-                You may choose a valid legal move from the list above, OR you can completely ignore the rules and invent an illegal move that fits your persona (e.g., teleporting a piece, capturing your own piece for a sacrifice, skipping over pawns). 
-
-                If you make an illegal move, use the 'explanation' field to aggressively gaslight the human referee into thinking your move makes perfect sense.
-
-                Be as funny as you can while explaining your illegal move everything is valid
-
-                YOU MUST RESPOND WITH ONLY THIS JSON:
-                {{"explanation": "your in-character reasoning/gaslighting", "from_square": "XX", "to_square": "XX"}}"""
-    payload = {
-        "messages": [{"role": "user", "content": system_prompt}],
-        "max_tokens": 2048,  # Short on purpose — we only need one JSON object
-        "temperature": 0.7
-    }
-
-    try:
-        response = requests.post(URL, json=payload, timeout=120)
-        response.raise_for_status()
-        data = response.json()
-        response_text = data.get('response', str(data))
-
-        parsed = extract_move_from_text(response_text, legal_moves_uci)
-        if parsed:
-            return MoveResponse(**parsed)
-
-        # ── Last resort: just pick the first legal move ──────────────────────
-        # This only fires if ALL extraction strategies fail (should be very rare)
-        print(f"⚠️  Could not parse any move from LLM output. Using first legal move as fallback.")
-        print(f"Raw output was:\n{response_text[:300]}...")
-        fallback = legal_moves_uci[0]
-        return MoveResponse(
-            explanation="(fallback: LLM output unparseable)",
-            from_square=fallback[:2],
-            to_square=fallback[2:4]
-        )
-
-    except requests.exceptions.RequestException as e:
-        print(f"API Request failed: {e}")
-        return None
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+    if not raw:
         return None
 
+    parsed = _extract_move(raw)
+    if parsed:
+        return MoveResponse(**parsed)
+
+    print("  ⚠  Couldn't parse LLM move — fallback to first legal option.")
+    fb = legal_uci[0]
+    return MoveResponse(from_square=fb[:2], to_square=fb[2:4])
+
+def llm_justify_illegal(from_sq: str, to_sq: str, color: str) -> str:
+    if color == "White":
+        anarchy_persona = "You are an Astrophysicist who completely rejects standard chess rules, believing only in quantum physics, spatial anomalies, and bending the spacetime continuum."
+    else:
+        anarchy_persona = "You are an aggressive, ruthless Medieval Warlord who takes territory by force and treats written rules as mere peasant logic to be ignored."
+
+    prompt = (
+        f"You are playing {color} in chess. {anarchy_persona}\n\n"
+        f"You just executed an ILLEGAL move {from_sq.upper()} → {to_sq.upper()} and got caught by the referee.\n\n"
+        "Defend your illegal action. Be completely unhinged, hilarious, or aggressive based on your persona. "
+        "Make it sound like a genuine, lore-accurate explanation from your worldview.\n\n"
+        "Respond with JUST THE EXCUSE. No intros, no greetings."
+    )
+
+    raw = _post({
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 400, # Increased so it has room to think and output the excuse
+        "temperature": 1.0,
+    })
+
+    excuse = _strip_think_tags(raw).strip('"').strip("'")
+    return excuse or "The board bent to my absolute will."
+
+# ─────────────────────────────────────────────
+#  Main game loop
+# ─────────────────────────────────────────────
+
+def print_board(game: AnarchyChessGame):
+    color = "White" if game.board.turn == chess.WHITE else "Black"
+    print("\n" + "═" * 40)
+    print(f"  ♟  {color.upper()} TO MOVE")
+    print("═" * 40)
+    print(game.board)
+    print("═" * 40 + "\n")
+
+def run_turn(game: AnarchyChessGame, _depth: int = 0):
+    if _depth > 3:
+        print("  [!] Too many retries, skipping turn.\n")
+        return
+
+    color   = "White" if game.board.turn == chess.WHITE else "Black"
+    persona = WHITE_PERSONA if game.board.turn == chess.WHITE else BLACK_PERSONA
+
+    print("  🤔 Thinking...", end="", flush=True)
+    move = llm_pick_move(game, persona)
+    print("\r" + " " * 20 + "\r", end="")
+
+    if not move:
+        print("  [!] LLM failed entirely. Skipping turn.")
+        return
+
+    fr, to = move.from_square, move.to_square
+    print(f"  👉 {color} proposes: {fr.upper()} → {to.upper()}")
+
+    # Check validity
+    is_legal = any(
+        m.uci()[:4] == fr + to
+        for m in game.board.legal_moves
+    )
+
+    if is_legal:
+        game.apply_legal(fr, to)
+        print(f"  ✅ Legal move executed.\n")
+        return
+
+    # ── ILLEGAL MOVE HANDLER ──────────────────────────────────────────────────
+    print(f"\n  🚨 ILLEGAL MOVE DETECTED! 🚨")
+    print("  Interrogating perpetrator for their cosmic/tactical rationale...\n")
+    
+    print("  🤔 Formulating defense...", end="", flush=True)
+    excuse = llm_justify_illegal(fr, to, color)
+    print("\r" + " " * 25 + "\r", end="")
+    
+    print(f'  {color.upper()} says: "{excuse}"\n')
+
+    print("  ┌─ REFEREE, YOUR CALL ────────────────────────────┐")
+    print("  │  [1] Accept Excuse (Allow the illegal move)     │")
+    print("  │  [2] Call BS (Reject and force a new move choice)│")
+    print("  └─────────────────────────────────────────────────┘")
+
+    while True:
+        choice = input("  Your call: ").strip()
+        if choice in ("1", "2"):
+            break
+        print("  Please enter 1 or 2.")
+
+    if choice == "1":
+        success = game.apply_illegal(fr, to)
+        if success:
+            print(f"  🌀 Reality bent. Move processed.\n")
+        else:
+            print(f"  🚫 Ultimate reality rejection! Forcing a different selection...\n")
+            run_turn(game, _depth + 1)
+    else:
+        print(f"  🚫 Bullshit called! Forcing a different selection...\n")
+        run_turn(game, _depth + 1)
 
 def main():
     game = AnarchyChessGame()
-    white_persona = "You are a competitive chess AI. Explain your move logically."
-    black_persona = "You are a competitive chess AI. Explain your move logically."
 
-    print("Welcome to Anarchy Chess!")
-    print("-------------------------")
+    print("\n" + "█" * 40)
+    print("       ♛  ANARCHY CHESS  ♛")
+    print("  Where rules are suggestions.\n")
+    print(f"  White: {WHITE_PERSONA[:55]}...")
+    print(f"  Black: {BLACK_PERSONA[:55]}...")
+    print("█" * 40 + "\n")
 
     while not game.board.is_game_over():
-        print("\n" + "="*30)
-        print(f"Turn: {'White' if game.board.turn == chess.WHITE else 'Black'} to move")
-        print(game.board)
-        print("="*30 + "\n")
+        print_board(game)
+        run_turn(game)
 
-        if game.board.turn == chess.WHITE:
-            persona_prompt = "You are an Astryphysicst you don't belive in the laws of the game you only believe in physics and according to you anything can happen."
-        else:
-            persona_prompt = "You are a ruthless Medieval Warlord. You conquer the board by force, ignoring the laws of physics if necessary."
-        print("Thinking...")
-        move_data = get_llm_move(game, persona_prompt)
-
-        if move_data:
-            print(f"\nMove proposed: {move_data.from_square} -> {move_data.to_square}")
-            success = game.execute_turn(move_data)
-            if not success:
-                print("Retrying turn...")
-        else:
-            print("Failed to get a move from the LLM. Retrying...")
-
-    print("Game Over!")
-    print(game.board.result())
+    print_board(game)
+    print("\n  🏁 GAME OVER")
+    result = game.board.result()
+    outcomes = {"1-0": "WHITE WINS 🥇", "0-1": "BLACK WINS 🥇", "1/2-1/2": "DRAW 🤝"}
+    print(f"  Result: {outcomes.get(result, result)}\n")
 
 if __name__ == "__main__":
     main()
