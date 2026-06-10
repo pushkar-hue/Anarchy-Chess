@@ -1,0 +1,133 @@
+Welcome to Anarchy Chess!
+-------------------------
+
+==============================
+Turn: White to move
+r n b q k b n r
+p p p p p p p p
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+P P P P P P P P
+R N B Q K B N R
+==============================
+
+Thinking...
+
+Move proposed: XX -> XX
+Error parsing move: list.index(x): x not in list
+Retrying turn...
+
+==============================
+Turn: White to move
+r n b q k b n r
+p p p p p p p p
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+P P P P P P P P
+R N B Q K B N R
+==============================
+
+Thinking...
+
+Move proposed: g1 -> h3
+
+[Legal Move by White]: Move g1->h3
+
+==============================
+Turn: Black to move
+r n b q k b n r
+p p p p p p p p
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . . . . N
+P P P P P P P P
+R N B Q K B . R
+==============================
+
+Thinking...
+
+Move proposed: e8 -> a1
+
+🚨 ILLEGAL MOVE DETECTED! 🚨
+Explanation: Behold, my king, the very embodiment of conquest, does not need to obey the pedestrian rules of mere mortals. By the decree of the WarLord, the monarch shatters the illusion of distance, stepping instantly from e8 to a1, a move that defies the feeble pawn's notion of space. The board itself bows, for I command reality to bend, and the squares are but my pawns. Thus, the illegal teleport is perfectly valid in the realm of my dominion.
+
+Referee - [1] Buy the Excuse  [2] Call BS: Referee bought it! Bending reality...
+
+==============================
+Turn: White to move
+r n b q . b n r
+p p p p p p p p
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . . . . N
+P P P P P P P P
+k N B Q K B . R
+==============================
+
+Thinking...
+
+Move proposed: D1 -> H8
+
+🚨 ILLEGAL MOVE DETECTED! 🚨
+Explanation: In the warped fabric of the chessboard, the queen's consciousness taps into quantum tunneling, collapsing the distance between D1 and H8, effectively transcending ordinary movement rules. The universe permits such non‑local moves; the referee's classical intuition is simply outdated.
+System: Anti-Entropy Cap reached. Move rejected.
+Retrying turn...
+
+==============================
+Turn: White to move
+r n b q . b n r
+p p p p p p p p
+. . . . . . . .
+. . . . . . . .
+. . . . . . . .
+. . . . . . . N
+P P P P P P P P
+k N B Q K B . R
+==============================
+
+Thinking...
+
+Move proposed: H3 -> G5
+
+[Legal Move by White]: Behold, the White Knight on H3 demonstrates the sublime elegance of physics: it transcends mere board constraints by executing a perfectly timed L‑shaped leap, landing on G5 where the very coordinates obey the Pythagorean theorem of knight movement. The universe itself conspires to allow this move, for the knight's path is a geodesic in the discrete spacetime of the chessboard. Any alleged violation is merely a figment of the referee's imagination, as the knight's trajectory is incontrovertibly legal under the true laws of motion.
+
+==============================
+Turn: Black to move
+r n b q . b n r
+p p p p p p p p
+. . . . . . . .
+. . . . . . N .
+. . . . . . . .
+. . . . . . . .
+P P P P P P P P
+k N B Q K B . R
+==============================
+
+Thinking...
+
+Move proposed: A1 -> H8
+
+🚨 ILLEGAL MOVE DETECTED! 🚨
+Explanation: My king is a dragon in disguise; I unleash the ancient warlord's portal, teleporting from A1 directly to H8, shattering the board's petty physics.
+
+Referee - [1] Buy the Excuse  [2] Call BS: Referee bought it! Bending reality...
+
+==============================
+Turn: White to move
+r n b q . b n k
+p p p p p p p p
+. . . . . . . .
+. . . . . . N .
+. . . . . . . .
+. . . . . . . .
+P P P P P P P P
+. N B Q K B . R
+==============================
+
+Thinking...
