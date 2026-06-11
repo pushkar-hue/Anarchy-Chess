@@ -21,7 +21,7 @@ P P P P P P P P
 R N B Q K B N R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 White proposes: E2 → E4
+  🤔 Thinking...                      👉 White proposes: G1 → F3
   ✅ Legal move executed.
 
 
@@ -32,40 +32,30 @@ r n b q k b n r
 p p p p p p p p
 . . . . . . . .
 . . . . . . . .
-. . . . P . . .
 . . . . . . . .
-P P P P . P P P
-R N B Q K B N R
+. . . . . N . .
+P P P P P P P P
+R N B Q K B . R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 Black proposes: A7 → H7
-
-  🚨 ILLEGAL MOVE DETECTED! 🚨
-  Interrogating perpetrator for their cosmic/tactical rationale...
-
-  🤔 Formulating defense...                           BLACK says: "I summoned the war‑god’s thunder, broke the pawn’s cage and rode my warhorse straight across the board like a cavalry charge — rules are the scribblings of peasants, not the law of a conquering warlord!"
-
-  ┌─ REFEREE, YOUR CALL ────────────────────────────┐
-  │  [1] Accept Excuse (Allow the illegal move)     │
-  │  [2] Call BS (Reject and force a new move choice)│
-  └─────────────────────────────────────────────────┘
-  Your call:   🌀 Reality bent. Move processed.
+  🤔 Thinking...                      👉 Black proposes: E7 → E5
+  ✅ Legal move executed.
 
 
 ════════════════════════════════════════
   ♟  WHITE TO MOVE
 ════════════════════════════════════════
 r n b q k b n r
-. p p p p p p p
+p p p p . p p p
 . . . . . . . .
+. . . . p . . .
 . . . . . . . .
-. . . . P . . .
-. . . . . . . .
-P P P P . P P P
-R N B Q K B N R
+. . . . . N . .
+P P P P P P P P
+R N B Q K B . R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 White proposes: E4 → E5
+  🤔 Thinking...                      👉 White proposes: F3 → E5
   ✅ Legal move executed.
 
 
@@ -73,13 +63,13 @@ R N B Q K B N R
   ♟  BLACK TO MOVE
 ════════════════════════════════════════
 r n b q k b n r
-. p p p p p p p
+p p p p . p p p
 . . . . . . . .
-. . . . P . . .
+. . . . N . . .
 . . . . . . . .
 . . . . . . . .
-P P P P . P P P
-R N B Q K B N R
+P P P P P P P P
+R N B Q K B . R
 ════════════════════════════════════════
 
   🤔 Thinking...                      👉 Black proposes: G8 → H6
@@ -90,139 +80,75 @@ R N B Q K B N R
   ♟  WHITE TO MOVE
 ════════════════════════════════════════
 r n b q k b . r
-. p p p p p p p
+p p p p . p p p
 . . . . . . . n
-. . . . P . . .
+. . . . N . . .
 . . . . . . . .
 . . . . . . . .
-P P P P . P P P
-R N B Q K B N R
+P P P P P P P P
+R N B Q K B . R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 White proposes: A2 → H2
-
-  🚨 ILLEGAL MOVE DETECTED! 🚨
-  Interrogating perpetrator for their cosmic/tactical rationale...
-
-  🤔 Formulating defense...                           WHITE says: "I bent the board’s spacetime fabric with a quantum tunneling maneuver, placing my pawn in a superposition of A2‑H2 until measurement forced it into existence, and the referee’s classical eyes simply collapsed the wavefunction, proving the move was perfectly legal in the quantum realm."
-
-  ┌─ REFEREE, YOUR CALL ────────────────────────────┐
-  │  [1] Accept Excuse (Allow the illegal move)     │
-  │  [2] Call BS (Reject and force a new move choice)│
-  └─────────────────────────────────────────────────┘
-  Your call:   🌀 Reality bent. Move processed.
+  🤔 Thinking...                      👉 White proposes: E5 → F7
+  ✅ Legal move executed.
 
 
 ════════════════════════════════════════
   ♟  BLACK TO MOVE
 ════════════════════════════════════════
 r n b q k b . r
-. p p p p p p p
+p p p p . N p p
 . . . . . . . n
-. . . . P . . .
 . . . . . . . .
 . . . . . . . .
-. P P P . P P P
-R N B Q K B N R
+. . . . . . . .
+P P P P P P P P
+R N B Q K B . R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 Black proposes: H8 → G8
-
-  🚨 ILLEGAL MOVE DETECTED! 🚨
-  Interrogating perpetrator for their cosmic/tactical rationale...
-
-  🤔 Formulating defense...                           BLACK says: "Okay, let's break this down. User wants me to roleplay as a Black chess player who's also a Medieval Warlord, justifying an illegal move (H8→G8). The key constraints are: must be unhinged/aggressive/hilarious, lore-accurate to my persona, and ONLY the excuse - no intros.
-
-First, analyzing the illegal move: H8 to G8 isn't possible in standard chess since pawns move forward (H-file pawn can't move backward to G8). As a warlord persona, I'd treat rules as "peasant logic" so need to invent a violent, historical justification. 
-
-Hmm... medieval warfare angles: siege warfare? Cavalry charges? Ah! H8 is like a castle tower (rook's starting position), G8 could be the enemy king's position. Perfect - I can frame it as a surprise cavalry raid where the pawn (warrior) breaks formation to charge. 
-
-Must avoid chess jargon since I'm a warlord. Instead: "steed", "saddle", "squire". Make it visceral - blood, splintered wood. The humor comes from absurdly violent justification for a pawn move. 
-
-Key elements to hit:
-- "Peasant rules" dismissal (calling chess rules "peasant scribbles")
-- Physical comedy of horse crashing through board
-- Medieval hierarchy (squire as pawn, king as enemy)
-- Over-the-top violence ("splintered spine", "crimson tide")
-
-Gotta keep it short though - user said "JUST THE EXCUSE". No room for "I am" statements. Pure aggression. 
-
-*Brainstorming phrases:*
-"Peasant scribbles!" (rules dismissal)
-"Squire's steed!" (pawn as horse)
-"Crash through splintered wood!" (violent action)
-"King's spine shattered!" (absurd consequence)
-
-Wait - must specify H8→G8. So "H8's tower" becomes "steed's saddle" moving to "king's throat". Yes! 
-
-Final check: 
-- Aggressive? (Yes, "
-
-  ┌─ REFEREE, YOUR CALL ────────────────────────────┐
-  │  [1] Accept Excuse (Allow the illegal move)     │
-  │  [2] Call BS (Reject and force a new move choice)│
-  └─────────────────────────────────────────────────┘
-  Your call:   🚫 Bullshit called! Forcing a different selection...
-
-  🤔 Thinking...                      👉 Black proposes: H6 → G8
+  🤔 Thinking...                      👉 Black proposes: H6 → F7
   ✅ Legal move executed.
 
 
 ════════════════════════════════════════
   ♟  WHITE TO MOVE
 ════════════════════════════════════════
-r n b q k b n r
-. p p p p p p p
-. . . . . . . .
-. . . . P . . .
+r n b q k b . r
+p p p p . n p p
 . . . . . . . .
 . . . . . . . .
-. P P P . P P P
-R N B Q K B N R
+. . . . . . . .
+. . . . . . . .
+P P P P P P P P
+R N B Q K B . R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 White proposes: G1 → H3
+  🤔 Thinking...                      👉 White proposes: E2 → E4
   ✅ Legal move executed.
 
 
 ════════════════════════════════════════
   ♟  BLACK TO MOVE
 ════════════════════════════════════════
-r n b q k b n r
-. p p p p p p p
+r n b q k b . r
+p p p p . n p p
+. . . . . . . .
 . . . . . . . .
 . . . . P . . .
 . . . . . . . .
-. . . . . . . N
-. P P P . P P P
+P P P P . P P P
 R N B Q K B . R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 Black proposes: B7 → H7
+  🤔 Thinking...                      👉 Black proposes: D8 → E4
 
   🚨 ILLEGAL MOVE DETECTED! 🚨
   Interrogating perpetrator for their cosmic/tactical rationale...
 
-  🤔 Formulating defense...                           BLACK says: "By the blood‑soaked oath of my war‑banner, the bishop is not a mere clerk but a war‑steed, and the board a battlefield — B7 to H7 is a thunderous cavalry charge across the plains, a reckless conquest that shatters the petty peasant rules the referee dares to enforce!"
+  🤔 Formulating defense...                           BLACK says: "REFEEREE? You dare address a conqueror with the titles of a clerk? I do not move pieces upon a board; I move legions across a landscape! If my heavy cavalry rode from the shadow of the eighth rank straight into the heart of your E4, it is because your "rules" were not written in blood, but in the ink of cowards! The square was weak, the terrain was mine for the taking, and your "logic" is nothing more than the whimpering of a man too afraid to hold what he stands upon! I have taken cities with less resistance than your pathetic little laws. Move your hand, or I shall move it through your chest!"
 
   ┌─ REFEREE, YOUR CALL ────────────────────────────┐
   │  [1] Accept Excuse (Allow the illegal move)     │
   │  [2] Call BS (Reject and force a new move choice)│
   └─────────────────────────────────────────────────┘
-  Your call:   🌀 Reality bent. Move processed.
-
-
-════════════════════════════════════════
-  ♟  WHITE TO MOVE
-════════════════════════════════════════
-r n b q k b n r
-. . p p p p p p
-. . . . . . . .
-. . . . P . . .
-. . . . . . . .
-. . . . . . . N
-. P P P . P P P
-R N B Q K B . R
-════════════════════════════════════════
-
-  🤔 Thinking...
+  Your call: 

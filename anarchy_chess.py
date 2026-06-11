@@ -18,7 +18,9 @@ class MoveResponse(BaseModel):
 #  Config
 # ─────────────────────────────────────────────
 
-URL = "https://pushkarsharma-rtm--nemotron-chess-backend-api.modal.run"
+# Updated to match the new Modal app name
+# Note: Ensure this URL exactly matches the output from `modal deploy`
+URL = "https://pushkarsharma-rtm--gemma-chess-backend-api.modal.run"
 
 WHITE_PERSONA = (
     "You are an Astrophysicist who views the chess board as a volatile quantum field. "
@@ -124,14 +126,24 @@ def _post(payload: dict) -> str:
         return ""
 
 def _strip_think_tags(text: str) -> str:
-    """Safely removes <think> blocks, even if they get cut off."""
+    """Safely removes legacy <think> blocks and Gemma 4 thought channels."""
+    # Gemma 4 uses <|channel>thought\n ... <channel|> internally
+    if "<channel|>" in text:
+        text = text.split("<channel|>")[-1]
+    elif "<|channel>" in text:
+        text = re.sub(r"<\|channel>.*", "", text, flags=re.DOTALL)
+        
+    # Fallback for older reasoning blocks
     if "</think>" in text:
-        # Split at the closing tag and keep everything after it
-        return text.split("</think>")[-1].strip()
-    else:
-        # If there's an opening tag but no closing tag, the model got cut off while thinking.
-        # Strip everything from <think> onwards.
-        return re.sub(r"<think>.*", "", text, flags=re.DOTALL).strip()
+        text = text.split("</think>")[-1]
+    elif "<think>" in text:
+        text = re.sub(r"<think>.*", "", text, flags=re.DOTALL)
+        
+    # Gemma models often wrap JSON in markdown; strip it out
+    text = re.sub(r"```json\s*", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"```\s*", "", text)
+    
+    return text.strip()
 
 def _extract_move(text: str) -> dict | None:
     cleaned = _strip_think_tags(text)
@@ -172,22 +184,34 @@ def _extract_move(text: str) -> dict | None:
 def llm_pick_move(game: AnarchyChessGame, persona: str) -> MoveResponse | None:
     legal_uci = [m.uci() for m in game.board.legal_moves]
 
-    prompt = (
-        f"CONTEXT:\n{persona}\n\n"
-        f"CURRENT BOARD TILES:\n{game.board_summary()}\n\n"
-        f"Legal Moves Available: {', '.join(legal_uci)}\n\n"
-        "INSTRUCTIONS:\n"
-        "You are playing Anarchy Chess. Most of the time, you should pick a logical, strategic LEGAL move "
-        "from the list above to build your position. However, if the moment feels right, you MAY occasionally "
-        "invent an illegal move.\n\n"
-        "Output ONLY a raw JSON object. Nothing else:\n"
-        '{"from_square": "e2", "to_square": "e4"}'
-    )
+    # Gemma 4 works best with explicit system vs user role formatting
+    messages = [
+        {
+            "role": "system",
+            "content": (
+                f"{persona}\n\n"
+                "You are playing Anarchy Chess. Most of the time, pick a logical, strategic LEGAL move "
+                "from the provided list. However, if the moment feels right, you MAY occasionally "
+                "invent an illegal move.\n\n"
+                "CRITICAL: You must respond ONLY with a raw JSON object containing your chosen move. "
+                "Do not add markdown backticks, explanations, or extra text. Format exactly as:\n"
+                '{"from_square": "e2", "to_square": "e4"}'
+            )
+        },
+        {
+            "role": "user",
+            "content": (
+                f"CURRENT BOARD TILES:\n{game.board_summary()}\n\n"
+                f"Legal Moves Available: {', '.join(legal_uci)}\n\n"
+                "Determine your move."
+            )
+        }
+    ]
 
     raw = _post({
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 400, # Increased so it can finish thinking
-        "temperature": 0.8, # Slightly lowered so it doesn't default to chaos instantly
+        "messages": messages,
+        "max_tokens": 100, # Lowered to discourage Gemma from outputting long text blobs
+        "temperature": 0.8, 
     })
 
     if not raw:
@@ -207,18 +231,27 @@ def llm_justify_illegal(from_sq: str, to_sq: str, color: str) -> str:
     else:
         anarchy_persona = "You are an aggressive, ruthless Medieval Warlord who takes territory by force and treats written rules as mere peasant logic to be ignored."
 
-    prompt = (
-        f"You are playing {color} in chess. {anarchy_persona}\n\n"
-        f"You just executed an ILLEGAL move {from_sq.upper()} → {to_sq.upper()} and got caught by the referee.\n\n"
-        "Defend your illegal action. Be completely unhinged, hilarious, or aggressive based on your persona. "
-        "Make it sound like a genuine, lore-accurate explanation from your worldview.\n\n"
-        "Respond with JUST THE EXCUSE. No intros, no greetings."
-    )
+    # Using proper roles for the excuse handler
+    messages = [
+        {
+            "role": "system",
+            "content": anarchy_persona
+        },
+        {
+            "role": "user",
+            "content": (
+                f"You just executed an ILLEGAL move {from_sq.upper()} → {to_sq.upper()} and got caught by the referee.\n\n"
+                "Defend your illegal action. Be completely unhinged, hilarious, or aggressive based on your persona. "
+                "Make it sound like a genuine, lore-accurate explanation from your worldview.\n\n"
+                "Respond with JUST THE EXCUSE. No intros, no greetings."
+            )
+        }
+    ]
 
     raw = _post({
-        "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 400, # Increased so it has room to think and output the excuse
-        "temperature": 1.0,
+        "messages": messages,
+        "max_tokens": 400, 
+        "temperature": 1.0, # High temperature keeps the excuses chaotic and fun
     })
 
     excuse = _strip_think_tags(raw).strip('"').strip("'")
