@@ -1,0 +1,7 @@
+gradio
+chess
+requests
+pydantic
+langchain-core
+langgraph
+os

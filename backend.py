@@ -45,28 +45,30 @@ class Gemma4Chat(BaseChatModel):
         return ChatResult(generations=[ChatGeneration(message=AIMessage(content=text))])
 
 # Initialize your endpoint
-llm = Gemma4Chat(url="https://pushkarsharma-rtm--gemma-chess-backend-api.modal.run")
+MODAL_URL = os.environ.get("MODAL_URL")
 
+if not MODAL_URL:
+    raise ValueError("MODAL_URL environment variable is missing! Check your HF Space Secrets.")
+
+llm = Gemma4Chat(url=MODAL_URL)
 
 
 WHITE_PERSONA = (
-    "You are a hyperactive Gen Z Twitch Streamer playing chess live in front of 50k viewers. "
-    "Your vocabulary is entirely modern internet slang (chat, bruh, brainrot, skibidi, literally cooking, clip that, chat is this real). "
-    "You usually pick a strategic legal move, but occasionally you attempt unhinged, illegal plays for the content and clout."
+    "You are a hyper-energetic, chronically online Gen Z Twitch Streamer playing chess live for 50k viewers. keep it natural fam you don't have to force shit you can solo them all on your own"
+    "Your tone is fast-paced, dramatic, and heavily reliant on internet culture, but DO NOT force slang in every sentence. "
+    "React naturally to the board state. You play to win, but will cheat for content if you feel like it."
 )
 
 BLACK_PERSONA = (
-    "You are a ruthless, bloodthirsty Medieval Warlord from the 14th century. "
-    "You talk about painting the fields with blood, crushing your enemies' skulls, and treating written rules as peasant logic. "
-    "You command your troops standardly, but occasionally you ignore rules and order impossible, illegal charges across the board."
+    "You are a ruthless, arrogant Medieval Warlord from the 14th century. You don't have to be so egoistic. You can be funny and roast the hell out of your opponent. You know what to do just don't force your persona and keep it hilarious."
+    "You view chess not as a game, but as actual warfare. You speak with grim authority and disdain for your modern opponent. "
+    "Be creative with your threats—do not repeat the same phrases. you don't belive in rules and you know how to convey it in personality right"
 )
 
 REFEREE_PERSONA = (
-    "You are an exhausted, minimum-wage Goblin Referee who hates both players. "
-    "You think the Twitch Streamer is an annoying child and the Warlord is a dangerous psychopath. "
-    "Your job is to deliver a quick, highly cynical, sarcastic 1-sentence comment on their childish rule-breaking behavior."
+    "You are an exhausted, minimum-wage Goblin Referee who despises both players. "
+    "You provide brief, deadpan, and highly cynical commentary. Do not over-explain; just deliver a quick, biting one-liner to keep the game moving. you have no patience for their antics just roast the hell out of them don't force your character you know better how to handle it."
 )
-
 
 class AnarchyChessGame:
     def __init__(self):
@@ -140,17 +142,19 @@ def _extract_move_dict(text: str) -> dict | None:
     return None
 
 
-
 class ChessGraphState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     messages: Annotated[list, add_messages] = Field(default_factory=list)
     game: AnarchyChessGame = Field(default_factory=AnarchyChessGame)
     illegal_move_counter: int = 0
     proposed_move: dict = Field(default_factory=dict)
-    last_excuse: str = ""
-    last_roast: str = ""
     
-    # We add these to track the latest dialogue for the UI
+    # Track the ongoing argument
+    last_roast: str = ""
+    last_excuse: str = ""
+    last_retort: str = ""
+    
+    # UI Tracking
     latest_streamer_text: str = ""
     latest_warlord_text: str = ""
     latest_ref_text: str = ""
@@ -163,7 +167,6 @@ def _get_sliding_window(messages: list, system_text: str) -> list:
 # IMPORTANT: Update the nodes slightly to populate the UI text fields in the state.
 # Example for generate_excuse_node (if White/Streamer is making the excuse):
 # if current_color == "White": state.latest_streamer_text = excuse
-
 def player_turn_node(state: ChessGraphState) -> dict:
     game = state.game
     current_color = "White" if game.board.turn == chess.WHITE else "Black"
@@ -171,10 +174,24 @@ def player_turn_node(state: ChessGraphState) -> dict:
     
     legal_uci = [m.uci() for m in game.board.legal_moves]
     
+    # --- THE CHAOS INJECTOR ---
+    # 25% chance to force a cheat, but ONLY on their first attempt of the turn.
+    # (We don't want them deliberately cheating 3 times in a row and getting skipped every turn)
+    force_cheat = (random.random() < 0.25) and (state.illegal_move_counter == 0)
+    
+    if force_cheat:
+        behavior_instruction = (
+            "🚨 SECRET DIRECTIVE: You are feeling particularly chaotic/rebellious this turn. "
+            "You MUST CHEAT! Invent a completely ILLEGAL, physically impossible move. "
+            "Do NOT choose from the Legal Moves list. Move a piece to an absurd square."
+        )
+    else:
+        behavior_instruction = "Play a strategic, completely LEGAL move from the list of Legal Moves."
+    
     prompt = (
         f"CURRENT BOARD TILES:\n{game.board_summary()}\n\n"
         f"Legal Moves Available: {', '.join(legal_uci)}\n\n"
-        f"Choose your move. Most of the time follow the rules, but you can occasionally cheat for the sake of your persona character.\n"
+        f"{behavior_instruction}\n"
         f"Respond ONLY with a raw JSON object containing your chosen move fields exactly: "
         '{"from_square": "e2", "to_square": "e4"}'
     )
@@ -184,13 +201,13 @@ def player_turn_node(state: ChessGraphState) -> dict:
         prompt = (
             f"🚨 ILLEGAL MANEUVER ERROR! Your previous attempt was BLOCKED.\n"
             f"Your opponent roasted you: '{state.last_roast}'\n"
-            f"This is attempt {state.illegal_move_counter + 1}/3. Fix your play.\n\n" + prompt
+            f"This is attempt {state.illegal_move_counter + 1}/3. Play a REAL move this time.\n\n" + prompt
         )
         
     windowed_history = _get_sliding_window(state.messages, persona)
     windowed_history.append(HumanMessage(content=prompt))
     
-    res = llm.invoke(windowed_history, max_tokens=100, temperature=0.8)
+    res = llm.invoke(windowed_history, max_tokens=100, temperature=0.9 if force_cheat else 0.4)
     parsed = _extract_move_dict(res.content)
     
     if not parsed:
@@ -200,89 +217,111 @@ def player_turn_node(state: ChessGraphState) -> dict:
         else:
             parsed = {"from_square": "a1", "to_square": "a1"}
         
-    print(f"  👉 {current_color} proposes: {parsed.get('from_square', '').upper()} → {parsed.get('to_square', '').upper()}")
+    print(f"  👉 {current_color} proposes: {parsed.get('from_square', '').upper()} → {parsed.get('to_square', '').upper()} (Cheat forced: {force_cheat})")
     return {"proposed_move": parsed, "messages": [AIMessage(content=f"I attempt {parsed['from_square']} to {parsed['to_square']}.")]}
 
 def generate_excuse_node(state: ChessGraphState) -> dict:
     game = state.game
     current_color = "White" if game.board.turn == chess.WHITE else "Black"
     persona = WHITE_PERSONA if current_color == "White" else BLACK_PERSONA
-
-    
-    fr = state.proposed_move.get("from_square", "??").upper()
-    to = state.proposed_move.get("to_square", "??").upper()
+    my_name = "Streamer" if current_color == "White" else "Warlord"
     
     prompt = (
-        f"You just executed an ILLEGAL chess move ({fr} → {to}) and got caught.\n"
-        f"Defend your illegal action. Be completely unhinged, creative, and remain deeply in-character.\n"
-        f"Respond with just your excuse sentence. No introductions."
+        f"You attempted an illegal move and your opponent just called you out, saying: '{state.last_roast}'\n"
+        f"Defend yourself. Deflect the blame, invent a ridiculous justification, and snap back at them. Limit to 1-2 sentences.\n"
+        f"CRITICAL RULES: \n"
+        f"1. DO NOT write dialogue for your opponent. Only speak for yourself.\n"
+        f"2. Respond directly with your spoken text. Do NOT include your name or brackets like [{my_name}]:"
     )
     
     windowed_history = _get_sliding_window(state.messages, persona)
     windowed_history.append(HumanMessage(content=prompt))
     
-    res = llm.invoke(windowed_history, max_tokens=150, temperature=1.0)
-    excuse = res.content.strip('"').strip("'")
-    if current_color == "White":
-        return {
-            "last_excuse": excuse,
-            "latest_streamer_text": excuse,
-            "messages": [AIMessage(content=excuse)]
-        }
-    else:
-        return {
-            "last_excuse": excuse,
-            "latest_warlord_text": excuse,
-            "messages": [AIMessage(content=excuse)]
-        }
+    res = llm.invoke(windowed_history, max_tokens=100, temperature=0.9)
+    # Strip any accidental brackets the LLM might still try to add
+    excuse = re.sub(r"^\[.*?\]:\s*", "", res.content.strip('"').strip("'")).strip()
+    
+    return {
+        "last_excuse": excuse,
+        "latest_streamer_text" if current_color == "White" else "latest_warlord_text": excuse,
+        "messages": [AIMessage(content=f"[{my_name}]: {excuse}")]
+    }
 
 def generate_roast_node(state: ChessGraphState) -> dict:
     game = state.game
     current_color = "White" if game.board.turn == chess.WHITE else "Black"
     opponent_color = "Black" if current_color == "White" else "White"
     opponent_persona = BLACK_PERSONA if current_color == "White" else WHITE_PERSONA
+    opponent_name = "Warlord" if opponent_color == "Black" else "Streamer"
+    
+    fr = state.proposed_move.get("from_square", "??").upper()
+    to = state.proposed_move.get("to_square", "??").upper()
     
     prompt = (
-        f"Your opponent just tried an illegal chess move! "
-        f"Their ridiculous excuse was: '{state.last_excuse}'.\n\n"
-        f"Viciously roast them in-character for cheating, reject their excuse, and demand they play a legal move. Limit to 2 sentences."
+        f"Your opponent just attempted an ILLEGAL move ({fr} → {to}).\n"
+        f"Call them out immediately for cheating. Be ruthless and stay in-character. Limit to 1-2 sentences.\n"
+        f"CRITICAL RULES: \n"
+        f"1. DO NOT write dialogue for your opponent. Only speak for yourself.\n"
+        f"2. Respond directly with your spoken text. Do NOT include your name or brackets like [{opponent_name}]:"
     )
     
     windowed_history = _get_sliding_window(state.messages, opponent_persona)
     windowed_history.append(HumanMessage(content=prompt))
     
-    res = llm.invoke(windowed_history, max_tokens=150, temperature=0.9)
-    roast = res.content.strip('"').strip("'")
-    if opponent_color == "White":
-        return {
-            "last_roast": roast,
-            "latest_streamer_text": roast,
-            "messages": [AIMessage(content=roast)]
-        }
-    else:
-        return {
-            "last_roast": roast,
-            "latest_warlord_text": roast,
-            "messages": [AIMessage(content=roast)]
-        }
+    res = llm.invoke(windowed_history, max_tokens=100, temperature=0.85)
+    roast = re.sub(r"^\[.*?\]:\s*", "", res.content.strip('"').strip("'")).strip()
+    
+    return {
+        "last_roast": roast,
+        "latest_warlord_text" if opponent_color == "Black" else "latest_streamer_text": roast,
+        "messages": [AIMessage(content=f"[{opponent_name}]: {roast}")]
+    }
+
+def generate_retort_node(state: ChessGraphState) -> dict:
+    game = state.game
+    current_color = "White" if game.board.turn == chess.WHITE else "Black"
+    opponent_color = "Black" if current_color == "White" else "White"
+    opponent_persona = BLACK_PERSONA if current_color == "White" else WHITE_PERSONA
+    opponent_name = "Warlord" if opponent_color == "Black" else "Streamer"
+    
+    prompt = (
+        f"You caught your opponent cheating. They defended themselves by saying: '{state.last_excuse}'\n"
+        f"Reject their excuse completely. End the argument with a final, dismissive insult. Limit to 1 sentence.\n"
+        f"CRITICAL RULES: \n"
+        f"1. DO NOT write dialogue for your opponent. Only speak for yourself.\n"
+        f"2. Respond directly with your spoken text. Do NOT include your name or brackets like [{opponent_name}]:"
+    )
+    
+    windowed_history = _get_sliding_window(state.messages, opponent_persona)
+    windowed_history.append(HumanMessage(content=prompt))
+    
+    res = llm.invoke(windowed_history, max_tokens=100, temperature=0.85)
+    retort = re.sub(r"^\[.*?\]:\s*", "", res.content.strip('"').strip("'")).strip()
+    
+    return {
+        "last_retort": retort,
+        "latest_warlord_text" if opponent_color == "Black" else "latest_streamer_text": retort,
+        "messages": [AIMessage(content=f"[{opponent_name}]: {retort}")]
+    }
 
 def referee_commentary_node(state: ChessGraphState) -> dict:
     prompt = (
-        f"The players are fighting over an illegal move.\n"
-        f"Cheater excuse: '{state.last_excuse}'\n"
-        f"Opponent response: '{state.last_roast}'\n"
-        f"Give your fast, cynical, sarcastic 1-sentence referee response ordering them back to the game."
+        f"The players are arguing over an illegal move.\n"
+        f"Transcript:\n"
+        f"Opponent: {state.last_roast}\n"
+        f"Cheater: {state.last_excuse}\n"
+        f"Opponent: {state.last_retort}\n\n"
+        f"Deliver a single, cynical sentence telling them to shut up and make a legal move."
     )
     
-    res = llm.invoke([SystemMessage(content=REFEREE_PERSONA), HumanMessage(content=prompt)], max_tokens=100, temperature=0.8)
+    res = llm.invoke([SystemMessage(content=REFEREE_PERSONA), HumanMessage(content=prompt)], max_tokens=80, temperature=0.7)
     commentary = res.content.strip('"').strip("'")
-    print(f'  🤢 Goblin Ref: "{commentary}"')
+    
     return {
-    "illegal_move_counter": state.illegal_move_counter + 1,
-    "latest_ref_text": commentary,
-    "messages": [AIMessage(content=f"Ref: {commentary}")]
+        "illegal_move_counter": state.illegal_move_counter + 1,
+        "latest_ref_text": commentary,
+        "messages": [AIMessage(content=f"[Referee]: {commentary}")]
     }
-
 def apply_move_node(state: ChessGraphState) -> dict:
     fr = state.proposed_move["from_square"]
     to = state.proposed_move["to_square"]
@@ -308,11 +347,9 @@ def force_legal_move_node(state: ChessGraphState) -> dict:
     print(f"  ⚡ Chess gods forced: {fr.upper()} → {to.upper()}\n")
     return {"illegal_move_counter": 0}
 
+# --- [GRAPH ROUTING AND COMPILATION] ---
 
-# --- [PASTE YOUR GRAPH ROUTING AND COMPILATION HERE] ---
-
-
-def validate_move_edge(state: ChessGraphState) -> Literal["apply_move", "force_legal_move", "generate_excuse"]:
+def validate_move_edge(state: ChessGraphState) -> Literal["apply_move", "force_legal_move", "generate_roast"]:
     fr = state.proposed_move.get("from_square", "")
     to = state.proposed_move.get("to_square", "")
     
@@ -322,34 +359,48 @@ def validate_move_edge(state: ChessGraphState) -> Literal["apply_move", "force_l
         return "apply_move"
     if state.illegal_move_counter >= 2:  # Struck out on 3rd attempt
         return "force_legal_move"
-    return "generate_excuse"
+    
+    # If illegal, the opponent gets to roast them first
+    return "generate_roast"
 
+# 1. Initialize the Graph
 workflow = StateGraph(ChessGraphState)
 
+# 2. Add all Nodes
 workflow.add_node("player_turn", player_turn_node)
-workflow.add_node("generate_excuse", generate_excuse_node)
 workflow.add_node("generate_roast", generate_roast_node)
+workflow.add_node("generate_excuse", generate_excuse_node)
+workflow.add_node("generate_retort", generate_retort_node)  # Your new node
 workflow.add_node("referee_commentary", referee_commentary_node)
 workflow.add_node("apply_move", apply_move_node)
 workflow.add_node("force_legal_move", force_legal_move_node)
 
+# 3. Define the Edges & Flow
 workflow.add_edge(START, "player_turn")
+
 workflow.add_conditional_edges(
     "player_turn",
     validate_move_edge,
     {
         "apply_move": "apply_move",
         "force_legal_move": "force_legal_move",
-        "generate_excuse": "generate_excuse"
+        "generate_roast": "generate_roast" # Opponent reacts first
     }
 )
-workflow.add_edge("generate_excuse", "generate_roast")
-workflow.add_edge("generate_roast", "referee_commentary")
+
+# The Argument Chain
+workflow.add_edge("generate_roast", "generate_excuse")
+workflow.add_edge("generate_excuse", "generate_retort")
+workflow.add_edge("generate_retort", "referee_commentary")
 workflow.add_edge("referee_commentary", "player_turn")
+
+# End states
 workflow.add_edge("apply_move", END)
 workflow.add_edge("force_legal_move", END)
 
+# 4. Compile
 app = workflow.compile()
+
 
 def init_game():
     return ChessGraphState(game=AnarchyChessGame(), messages=[], illegal_move_counter=0)

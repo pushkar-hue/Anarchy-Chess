@@ -174,7 +174,7 @@ def play_next_turn(state):
         state = updated_state
         board_html = render_board(state.game.board)
         
-        # Determine who is talking based on the node and current turn
+        # Determine whose turn it currently is
         current_turn = "White" if state.game.board.turn == chess.WHITE else "Black"
         
         if node_name == "player_turn":
@@ -189,30 +189,42 @@ def play_next_turn(state):
                     yield board_html, streamer_chat, f_text, ref_chat, state, status
                 warlord_chat += msg + "\n"
 
-        elif node_name == "generate_excuse":
-            msg = f"[EXCUSE] {state.last_excuse}"
-            status = "🚨 ILLEGAL MOVE DETECTED! Formulating excuse..."
-            if current_turn == "White":
-                for f_text in typewriter_effect(msg, streamer_chat):
-                    yield board_html, f_text, warlord_chat, ref_chat, state, status
-                streamer_chat += msg + "\n"
-            else:
-                for f_text in typewriter_effect(msg, warlord_chat):
-                    yield board_html, streamer_chat, f_text, ref_chat, state, status
-                warlord_chat += msg + "\n"
-
         elif node_name == "generate_roast":
             msg = f"[ROAST] {state.last_roast}"
-            status = "Opponent is retaliating..."
-            if current_turn == "White": # Black is roasting
+            status = "🚨 ILLEGAL MOVE! Opponent is calling them out..."
+            if current_turn == "White": # Streamer cheated, Warlord roasts
                 for f_text in typewriter_effect(msg, warlord_chat):
                     yield board_html, streamer_chat, f_text, ref_chat, state, status
                 warlord_chat += msg + "\n"
-            else: # White is roasting
+            else: # Warlord cheated, Streamer roasts
                 for f_text in typewriter_effect(msg, streamer_chat):
                     yield board_html, f_text, warlord_chat, ref_chat, state, status
                 streamer_chat += msg + "\n"
+
+        elif node_name == "generate_excuse":
+            msg = f"[EXCUSE] {state.last_excuse}"
+            status = "Cheater is scrambling for an excuse..."
+            if current_turn == "White": # Streamer excuses themselves
+                for f_text in typewriter_effect(msg, streamer_chat):
+                    yield board_html, f_text, warlord_chat, ref_chat, state, status
+                streamer_chat += msg + "\n"
+            else: # Warlord excuses themselves
+                for f_text in typewriter_effect(msg, warlord_chat):
+                    yield board_html, streamer_chat, f_text, ref_chat, state, status
+                warlord_chat += msg + "\n"
                 
+        elif node_name == "generate_retort":
+            msg = f"[RETORT] {state.last_retort}"
+            status = "Opponent delivers the final word..."
+            if current_turn == "White": # Warlord retorts
+                for f_text in typewriter_effect(msg, warlord_chat):
+                    yield board_html, streamer_chat, f_text, ref_chat, state, status
+                warlord_chat += msg + "\n"
+            else: # Streamer retorts
+                for f_text in typewriter_effect(msg, streamer_chat):
+                    yield board_html, f_text, warlord_chat, ref_chat, state, status
+                streamer_chat += msg + "\n"
+
         elif node_name == "referee_commentary":
             msg = f"[REF] {state.messages[-1].content}"
             status = "Referee steps in..."
@@ -227,11 +239,20 @@ def play_next_turn(state):
         status = "Turn complete. Waiting for next player."
         
     yield board_html, streamer_chat, warlord_chat, ref_chat, state, status
+    
+def get_profile_html(emoji, name, role, pfp_class, img_path=None):
+    pfp_content = emoji
+    if img_path and os.path.exists(img_path):
+        try:
+            with open(img_path, "rb") as f:
+                b64_img = base64.b64encode(f.read()).decode("utf-8")
+            pfp_content = f'<img src="data:image/jpeg;base64,{b64_img}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;" />'
+        except Exception:
+            pass
 
-def get_profile_html(emoji, name, role, pfp_class):
     return f'''
     <div class="profile-container {pfp_class}">
-        <div class="pfp">{emoji}</div>
+        <div class="pfp">{pfp_content}</div>
         <div class="profile-info">
             <div class="name">{name}</div>
             <div class="role">{role}</div>
@@ -250,7 +271,7 @@ with gr.Blocks(css=CSS, theme=gr.themes.Monochrome()) as demo:
         with gr.Row():
             # STREAMER UI (Top Left)
             with gr.Column(scale=1):
-                gr.HTML(get_profile_html("🧑‍💻", "xX_ChessGod_Xx", "The Streamer", "streamer-profile"))
+                gr.HTML(get_profile_html("🧑‍💻", "xX_ChessGod_Xx", "The Streamer", "streamer-profile", "white.jpg"))
                 streamer_box = gr.Textbox(label="Twitch Chat / Internal Monologue", lines=12, interactive=False, elem_classes=["glass-box", "chat-box"])
             
             # CHESSBOARD (Center)
@@ -259,7 +280,7 @@ with gr.Blocks(css=CSS, theme=gr.themes.Monochrome()) as demo:
                 
                 # We place the Referee right below the board so it's in the middle!
                 gr.HTML("<div style='height: 20px;'></div>") # spacer
-                gr.HTML(get_profile_html("👺", "Zog", "Goblin Referee", "ref-profile"))
+                gr.HTML(get_profile_html("👺", "Zog", "Goblin Referee", "ref-profile", "ref.jpg"))
                 ref_box = gr.Textbox(label="", lines=2, interactive=False, show_label=False, elem_classes=["glass-box", "ref-box"])
                 
                 gr.HTML("<div style='height: 10px;'></div>") # spacer
@@ -267,7 +288,7 @@ with gr.Blocks(css=CSS, theme=gr.themes.Monochrome()) as demo:
                 
             # WARLORD UI (Top Right)
             with gr.Column(scale=1):
-                gr.HTML(get_profile_html("⚔️", "Lord Malacor", "The Warlord", "warlord-profile"))
+                gr.HTML(get_profile_html("⚔️", "Lord Malacor", "The Warlord", "warlord-profile", "black.jpg"))
                 warlord_box = gr.Textbox(label="Battle Cries", lines=12, interactive=False, elem_classes=["glass-box", "warlord-box"])
         
     # Wire up the button to our streaming function
@@ -278,4 +299,4 @@ with gr.Blocks(css=CSS, theme=gr.themes.Monochrome()) as demo:
     )
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(server_name="0.0.0.0", server_port=7860)
