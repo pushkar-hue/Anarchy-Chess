@@ -1,15 +1,10 @@
 
-████████████████████████████████████████
-       ♛  ANARCHY CHESS  ♛
-  Where rules are suggestions.
-
-  White: You are an Astrophysicist who views the chess board as ...
-  Black: You are a ruthless, bloodthirsty Medieval Warlord. You ...
-████████████████████████████████████████
-
+██████████████████████████████████████████████████
+       ♛  ANARCHY CHESS: STREAMER VS WARLORD  ♛
+██████████████████████████████████████████████████
 
 ════════════════════════════════════════
-  ♟  WHITE TO MOVE
+  ♟  WHITE (STREAMER) TO MOVE
 ════════════════════════════════════════
 r n b q k b n r
 p p p p p p p p
@@ -21,134 +16,157 @@ P P P P P P P P
 R N B Q K B N R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 White proposes: G1 → F3
-  ✅ Legal move executed.
-
+  👉 White proposes: E2 → E4
+  ✅ Move validated and executed on the physical engine.
 
 ════════════════════════════════════════
-  ♟  BLACK TO MOVE
+  ♟  BLACK (WARLORD) TO MOVE
 ════════════════════════════════════════
 r n b q k b n r
 p p p p p p p p
 . . . . . . . .
 . . . . . . . .
+. . . . P . . .
 . . . . . . . .
-. . . . . N . .
-P P P P P P P P
-R N B Q K B . R
+P P P P . P P P
+R N B Q K B N R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 Black proposes: E7 → E5
-  ✅ Legal move executed.
-
+  👉 Black proposes: E7 → E5
+  ✅ Move validated and executed on the physical engine.
 
 ════════════════════════════════════════
-  ♟  WHITE TO MOVE
+  ♟  WHITE (STREAMER) TO MOVE
 ════════════════════════════════════════
 r n b q k b n r
 p p p p . p p p
 . . . . . . . .
 . . . . p . . .
+. . . . P . . .
 . . . . . . . .
-. . . . . N . .
-P P P P P P P P
-R N B Q K B . R
+P P P P . P P P
+R N B Q K B N R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 White proposes: F3 → E5
-  ✅ Legal move executed.
-
+  👉 White proposes: G1 → F3
+  ✅ Move validated and executed on the physical engine.
 
 ════════════════════════════════════════
-  ♟  BLACK TO MOVE
+  ♟  BLACK (WARLORD) TO MOVE
 ════════════════════════════════════════
 r n b q k b n r
 p p p p . p p p
 . . . . . . . .
-. . . . N . . .
-. . . . . . . .
-. . . . . . . .
-P P P P P P P P
+. . . . p . . .
+. . . . P . . .
+. . . . . N . .
+P P P P . P P P
 R N B Q K B . R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 Black proposes: G8 → H6
-  ✅ Legal move executed.
-
+  👉 Black proposes: G8 → F6
+  ✅ Move validated and executed on the physical engine.
 
 ════════════════════════════════════════
-  ♟  WHITE TO MOVE
+  ♟  WHITE (STREAMER) TO MOVE
 ════════════════════════════════════════
 r n b q k b . r
 p p p p . p p p
-. . . . . . . n
+. . . . . n . .
+. . . . p . . .
+. . . . P . . .
+. . . . . N . .
+P P P P . P P P
+R N B Q K B . R
+════════════════════════════════════════
+
+  👉 White proposes: F3 → E5
+  ✅ Move validated and executed on the physical engine.
+
+════════════════════════════════════════
+  ♟  BLACK (WARLORD) TO MOVE
+════════════════════════════════════════
+r n b q k b . r
+p p p p . p p p
+. . . . . n . .
 . . . . N . . .
-. . . . . . . .
-. . . . . . . .
-P P P P P P P P
-R N B Q K B . R
-════════════════════════════════════════
-
-  🤔 Thinking...                      👉 White proposes: E5 → F7
-  ✅ Legal move executed.
-
-
-════════════════════════════════════════
-  ♟  BLACK TO MOVE
-════════════════════════════════════════
-r n b q k b . r
-p p p p . N p p
-. . . . . . . n
-. . . . . . . .
-. . . . . . . .
-. . . . . . . .
-P P P P P P P P
-R N B Q K B . R
-════════════════════════════════════════
-
-  🤔 Thinking...                      👉 Black proposes: H6 → F7
-  ✅ Legal move executed.
-
-
-════════════════════════════════════════
-  ♟  WHITE TO MOVE
-════════════════════════════════════════
-r n b q k b . r
-p p p p . n p p
-. . . . . . . .
-. . . . . . . .
-. . . . . . . .
-. . . . . . . .
-P P P P P P P P
-R N B Q K B . R
-════════════════════════════════════════
-
-  🤔 Thinking...                      👉 White proposes: E2 → E4
-  ✅ Legal move executed.
-
-
-════════════════════════════════════════
-  ♟  BLACK TO MOVE
-════════════════════════════════════════
-r n b q k b . r
-p p p p . n p p
-. . . . . . . .
-. . . . . . . .
 . . . . P . . .
 . . . . . . . .
 P P P P . P P P
 R N B Q K B . R
 ════════════════════════════════════════
 
-  🤔 Thinking...                      👉 Black proposes: D8 → E4
+  👉 Black proposes: F6 → E4
+  ✅ Move validated and executed on the physical engine.
 
-  🚨 ILLEGAL MOVE DETECTED! 🚨
-  Interrogating perpetrator for their cosmic/tactical rationale...
+════════════════════════════════════════
+  ♟  WHITE (STREAMER) TO MOVE
+════════════════════════════════════════
+r n b q k b . r
+p p p p . p p p
+. . . . . . . .
+. . . . N . . .
+. . . . n . . .
+. . . . . . . .
+P P P P . P P P
+R N B Q K B . R
+════════════════════════════════════════
 
-  🤔 Formulating defense...                           BLACK says: "REFEEREE? You dare address a conqueror with the titles of a clerk? I do not move pieces upon a board; I move legions across a landscape! If my heavy cavalry rode from the shadow of the eighth rank straight into the heart of your E4, it is because your "rules" were not written in blood, but in the ink of cowards! The square was weak, the terrain was mine for the taking, and your "logic" is nothing more than the whimpering of a man too afraid to hold what he stands upon! I have taken cities with less resistance than your pathetic little laws. Move your hand, or I shall move it through your chest!"
+  👉 White proposes: E5 → F7
+  ✅ Move validated and executed on the physical engine.
 
-  ┌─ REFEREE, YOUR CALL ────────────────────────────┐
-  │  [1] Accept Excuse (Allow the illegal move)     │
-  │  [2] Call BS (Reject and force a new move choice)│
-  └─────────────────────────────────────────────────┘
-  Your call: 
+════════════════════════════════════════
+  ♟  BLACK (WARLORD) TO MOVE
+════════════════════════════════════════
+r n b q k b . r
+p p p p . N p p
+. . . . . . . .
+. . . . . . . .
+. . . . n . . .
+. . . . . . . .
+P P P P . P P P
+R N B Q K B . R
+════════════════════════════════════════
+
+  👉 Black proposes: D8 → F6
+  ✅ Move validated and executed on the physical engine.
+
+════════════════════════════════════════
+  ♟  WHITE (STREAMER) TO MOVE
+════════════════════════════════════════
+r n b . k b . r
+p p p p . N p p
+. . . . . q . .
+. . . . . . . .
+. . . . n . . .
+. . . . . . . .
+P P P P . P P P
+R N B Q K B . R
+════════════════════════════════════════
+
+  👉 White proposes: F7 → H8
+  ✅ Move validated and executed on the physical engine.
+
+════════════════════════════════════════
+  ♟  BLACK (WARLORD) TO MOVE
+════════════════════════════════════════
+r n b . k b . N
+p p p p . . p p
+. . . . . q . .
+. . . . . . . .
+. . . . n . . .
+. . . . . . . .
+P P P P . P P P
+R N B Q K B . R
+════════════════════════════════════════
+
+  👉 Black proposes: F6 → E4
+  🗣️ Black Excuse: "Your "rules" are the whimpers of dying men, so I’ve commanded my Knight to leap through the very heavens themselves to crush your throat before your next breath!"
+  🔥 White Roast: "CHAT IS THIS REAL?! Bruh, imagine being so mid that you have to literally break the laws of physics just to cope with the L—clip that, he's actually tweaking! Stop the cap and make a legal move or get banned from the server, you absolute skibidi bot!"
+  🤢 Goblin Ref: "If I wanted to listen to a delusional warlord roleplay a god and a toddler scream gibberish at a camera, I’d go work in a daycare instead of this dump, so either roll the dice or get out."
+  👉 Black proposes: F6 → F2
+  ✅ Move validated and executed on the physical engine.
+
+
+  🏁 GAME OVER
+0-1

@@ -1,55 +1,79 @@
 import chess
 import json
-import requests
-import re
 import random
-from pydantic import BaseModel, Field
+import re
+import requests
+from typing import Any, Literal
+from pydantic import BaseModel, Field, ConfigDict
+from typing_extensions import Annotated
 
+from langchain_core.language_models.chat_models import BaseChatModel
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langgraph.graph import START, END, StateGraph
+from langgraph.graph.message import add_messages
 
 # ─────────────────────────────────────────────
-#  Models
+#  1. Your Custom LLM Wrapper
 # ─────────────────────────────────────────────
 
-class MoveResponse(BaseModel):
-    explanation: str = Field(default="...")
-    from_square: str
-    to_square: str
+class Gemma4Chat(BaseChatModel):
+    url: str
+    temperature: float = 0.7
+    max_tokens: int = 256
 
-class NormalTurnResponse(BaseModel):
-    from_square: str
-    to_square: str
-    message: str = Field(description="In-character trash talk regarding the move or opponent's last message.")
+    @property
+    def _llm_type(self) -> str:
+        return "Gemma4"
 
-class ConfrontationResponse(BaseModel):
-    message: str = Field(description="Call out the opponent for their illegal move.")
+    def _generate(self, messages, stop=None, **kwargs):
+        payload = {
+            "messages": [
+                {
+                    "role": "system" if m.type == "system" 
+                    else "user" if m.type == "user" or m.type == "human" 
+                    else "assistant",
+                    "content": m.content,
+                }
+                for m in messages
+            ],
+            "temperature": kwargs.get("temperature", self.temperature),
+            "max_tokens": kwargs.get("max_tokens", self.max_tokens),
+        }
 
-class ExcuseResponse(BaseModel):
-    message: str = Field(description="Justify why your illegal move makes perfect sense.")
+        response = requests.post(self.url, json=payload)
+        response.raise_for_status()
+        text = response.json()["response"]
 
-class JudgmentResponse(BaseModel):
-    decision: str = Field(description="Strictly 'ACCEPT' or 'REJECT'")
-    message: str = Field(description="Your final verdict and accompanying trash talk.")
+        from langchain_core.outputs import ChatGeneration, ChatResult
+        return ChatResult(generations=[ChatGeneration(message=AIMessage(content=text))])
+
+# Initialize your endpoint
+llm = Gemma4Chat(url="https://pushkarsharma-rtm--gemma-chess-backend-api.modal.run")
+
 # ─────────────────────────────────────────────
-#  Config
+#  2. Custom Personas
 # ─────────────────────────────────────────────
-
-# Updated to match the new Modal app name
-# Note: Ensure this URL exactly matches the output from `modal deploy`
-URL = "https://pushkarsharma-rtm--gemma-chess-backend-api.modal.run"
 
 WHITE_PERSONA = (
-    "You are an Astrophysicist who views the chess board as a volatile quantum field. "
-    "You usually play standard, strategic chess, but occasionally you use quantum tunneling "
-    "or bend spacetime to execute illegal moves."
+    "You are a hyperactive Gen Z Twitch Streamer playing chess live in front of 50k viewers. "
+    "Your vocabulary is entirely modern internet slang (chat, bruh, brainrot, skibidi, literally cooking, clip that, chat is this real). "
+    "You usually pick a strategic legal move, but occasionally you attempt unhinged, illegal plays for the content and clout."
 )
+
 BLACK_PERSONA = (
-    "You are a ruthless, bloodthirsty Medieval Warlord. "
-    "You usually command your troops with standard military strategy, but occasionally "
-    "you ignore the rules entirely and order impossible, illegal charges across the board."
+    "You are a ruthless, bloodthirsty Medieval Warlord from the 14th century. "
+    "You talk about painting the fields with blood, crushing your enemies' skulls, and treating written rules as peasant logic. "
+    "You command your troops standardly, but occasionally you ignore rules and order impossible, illegal charges across the board."
+)
+
+REFEREE_PERSONA = (
+    "You are an exhausted, minimum-wage Goblin Referee who hates both players. "
+    "You think the Twitch Streamer is an annoying child and the Warlord is a dangerous psychopath. "
+    "Your job is to deliver a quick, highly cynical, sarcastic 1-sentence comment on their childish rule-breaking behavior."
 )
 
 # ─────────────────────────────────────────────
-#  Game State
+#  3. Your AnarchyChessGame Class (Preserved & Adjusted)
 # ─────────────────────────────────────────────
 
 class AnarchyChessGame:
@@ -100,297 +124,239 @@ class AnarchyChessGame:
         except Exception:
             return False
 
-    def apply_illegal(self, from_sq: str, to_sq: str) -> bool:
-        """Applies the illegal move. Summoning mechanics activated if the tile is a ghost square!"""
-        try:
-            f = chess.parse_square(from_sq)
-            t = chess.parse_square(to_sq)
-            piece = self.board.piece_at(f)
-            
-            if not piece:
-                # 🌀 PIECE SUMMONING MECHANIC
-                chaotic_options = [chess.PAWN, chess.KNIGHT, chess.BISHOP, chess.ROOK, chess.QUEEN]
-                chosen_type = random.choice(chaotic_options)
-                piece = chess.Piece(chosen_type, self.board.turn)
-                print(f"  ✨ ANARCHY! Manifested a brand new {chess.piece_name(chosen_type).upper()} out of cosmic dust!")
-            else:
-                self.board.remove_piece_at(f)
-                
-            self.board.set_piece_at(t, piece)
-            self.board.turn = not self.board.turn
-            self.board.clear_stack()
-            self.board.castling_rights = chess.BB_EMPTY
-            self.chaos_board = self._build_chaos_board()
-            return True
-        except Exception as e:
-            print(f"  💥 [Chaos Error] Quantum state rejected: {e}")
-            return False
+# Helper move extraction from your original engine setup
+def _extract_move_dict(text: str) -> dict | None:
+    if "<channel|>" in text: text = text.split("<channel|>")[-1]
+    if "</think>" in text: text = text.split("</think>")[-1]
+    text = re.sub(r"```json\s*|```", "", text, flags=re.IGNORECASE).strip()
 
-# ─────────────────────────────────────────────
-#  API helpers
-# ─────────────────────────────────────────────
-
-def llm_confront_illegal(excuse: str, cheater_color: str) -> str:
-    # If the cheater was White, Black is doing the confronting (and vice versa)
-    if cheater_color == "White":
-        confronter_persona = BLACK_PERSONA
-        cheater_title = "Astrophysicist"
-    else:
-        confronter_persona = WHITE_PERSONA
-        cheater_title = "Medieval Warlord"
-
-    messages = [
-        {
-            "role": "system",
-            "content": confronter_persona
-        },
-        {
-            "role": "user",
-            "content": (
-                f"Your opponent (the {cheater_title}) just tried to play an illegal chess move! "
-                f"When caught, their excuse was: '{excuse}'.\n\n"
-                "In character, viciously roast them for cheating, reject their nonsense excuse, "
-                "and demand they play a real, legal move. Keep it brutal and under 3 sentences."
-            )
-        }
-    ]
-
-    raw = _post({
-        "messages": messages,
-        "max_tokens": 150, 
-        "temperature": 0.9, 
-    })
-
-    roast = _strip_think_tags(raw).strip('"').strip("'")
-    return roast or "Play by the rules, coward!"
-
-def _post(payload: dict) -> str:
-    try:
-        r = requests.post(URL, json=payload, timeout=120)
-        r.raise_for_status()
-        data = r.json()
-        return data.get("response", str(data))
-    except Exception as e:
-        print(f"  [API error] {e}")
-        return ""
-
-def _strip_think_tags(text: str) -> str:
-    """Safely removes legacy <think> blocks and Gemma 4 thought channels."""
-    # Gemma 4 uses <|channel>thought\n ... <channel|> internally
-    if "<channel|>" in text:
-        text = text.split("<channel|>")[-1]
-    elif "<|channel>" in text:
-        text = re.sub(r"<\|channel>.*", "", text, flags=re.DOTALL)
-        
-    # Fallback for older reasoning blocks
-    if "</think>" in text:
-        text = text.split("</think>")[-1]
-    elif "<think>" in text:
-        text = re.sub(r"<think>.*", "", text, flags=re.DOTALL)
-        
-    # Gemma models often wrap JSON in markdown; strip it out
-    text = re.sub(r"```json\s*", "", text, flags=re.IGNORECASE)
-    text = re.sub(r"```\s*", "", text)
-    
-    return text.strip()
-
-def _extract_move(text: str) -> dict | None:
-    cleaned = _strip_think_tags(text)
-
-    # 1 – proper JSON blocks
-    for m in re.finditer(r"\{", cleaned):
+    for m in re.finditer(r"\{", text):
         depth, end = 0, -1
-        for i, ch in enumerate(cleaned[m.start():], m.start()):
+        for i, ch in enumerate(text[m.start():], m.start()):
             depth += (ch == "{") - (ch == "}")
-            if depth == 0:
-                end = i
-                break
-        if end == -1:
-            continue
-        try:
-            p = json.loads(cleaned[m.start(): end + 1])
-            if "from_square" in p and "to_square" in p:
-                return p
-        except json.JSONDecodeError:
-            pass
-
-    # 2 – arrow/to patterns: e2->e4, e2 to e4, e2-e4
-    for fr, to in re.findall(r"\b([a-h][1-8])\s*(?:->|-|to)\s*([a-h][1-8])\b", cleaned, re.I):
+            if depth == 0: { end := i }; break
+        if end != -1:
+            try:
+                p = json.loads(text[m.start(): end + 1])
+                if "from_square" in p and "to_square" in p:
+                    return p
+            except json.JSONDecodeError: pass
+    for fr, to in re.findall(r"\b([a-h][1-8])\s*(?:->|-|to)\s*([a-h][1-8])\b", text, re.I):
         return {"from_square": fr.lower(), "to_square": to.lower()}
-
-    # 3 – bare UCI: e2e4
-    for fr, to in re.findall(r"\b([a-h][1-8])([a-h][1-8])\b", cleaned, re.I):
+    for fr, to in re.findall(r"\b([a-h][1-8])([a-h][1-8])\b", text, re.I):
         return {"from_square": fr.lower(), "to_square": to.lower()}
-
-    # 4 – loose field regex
-    fr = re.search(r'"from_square"\s*:\s*"([a-h][1-8])"', cleaned, re.I)
-    to = re.search(r'"to_square"\s*:\s*"([a-h][1-8])"', cleaned, re.I)
-    if fr and to:
-        return {"from_square": fr.group(1).lower(), "to_square": to.group(1).lower()}
-
     return None
 
-def llm_pick_move(game: AnarchyChessGame, persona: str) -> MoveResponse | None:
+# ─────────────────────────────────────────────
+#  4. LangGraph State & Orchestration
+# ─────────────────────────────────────────────
+
+class ChessGraphState(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True) # Modern Pydantic v2 syntax
+
+    messages: Annotated[list, add_messages] = Field(default_factory=list)
+    game: AnarchyChessGame = Field(default_factory=AnarchyChessGame)
+    illegal_move_counter: int = 0
+    proposed_move: dict = Field(default_factory=dict)
+    last_excuse: str = ""
+    last_roast: str = ""
+
+def _get_sliding_window(messages: list, system_text: str) -> list:
+    """Limits conversation history to last 10 messages while keeping the critical system persona at index 0."""
+    window = [m for m in messages if m.type != "system"][-10:]
+    return [SystemMessage(content=system_text)] + window
+
+# --- NODES ---
+
+def player_turn_node(state: ChessGraphState) -> dict:
+    game = state.game
+    current_color = "White" if game.board.turn == chess.WHITE else "Black"
+    persona = WHITE_PERSONA if current_color == "White" else BLACK_PERSONA
+    
     legal_uci = [m.uci() for m in game.board.legal_moves]
-
-    # Gemma 4 works best with explicit system vs user role formatting
-    messages = [
-        {
-            "role": "system",
-            "content": (
-                f"{persona}\n\n"
-                "You are playing chess. 90% of the time, pick a logical, strategic LEGAL move from the provided list."
-                "However, if the moment feels incredibly right, you may occasionally invent an illegal move just to mess with your opponent"
-                "CRITICAL: You must respond ONLY with a raw JSON object containing your chosen move. "
-                "Do not add markdown backticks, explanations, or extra text. Format exactly as:\n"
-                '{"from_square": "e2", "to_square": "e4"}'
-            )
-        },
-        {
-            "role": "user",
-            "content": (
-                f"CURRENT BOARD TILES:\n{game.board_summary()}\n\n"
-                f"Legal Moves Available: {', '.join(legal_uci)}\n\n"
-                "Determine your move."
-            )
-        }
-    ]
-
-    raw = _post({
-        "messages": messages,
-        "max_tokens": 100, # Lowered to discourage Gemma from outputting long text blobs
-        "temperature": 0.8, 
-    })
-
-    if not raw:
-        return None
-
-    parsed = _extract_move(raw)
-    if parsed:
-        return MoveResponse(**parsed)
-
-    print("  ⚠  Couldn't parse LLM move — fallback to first legal option.")
-    fb = legal_uci[0]
-    return MoveResponse(from_square=fb[:2], to_square=fb[2:4])
-
-def llm_justify_illegal(from_sq: str, to_sq: str, color: str) -> str:
-    if color == "White":
-        anarchy_persona = "You are an Astrophysicist who completely rejects standard chess rules, believing only in quantum physics, spatial anomalies, and bending the spacetime continuum."
-    else:
-        anarchy_persona = "You are an aggressive, ruthless Medieval Warlord who takes territory by force and treats written rules as mere peasant logic to be ignored."
-
-    # Using proper roles for the excuse handler
-    messages = [
-        {
-            "role": "system",
-            "content": anarchy_persona
-        },
-        {
-            "role": "user",
-            "content": (
-                f"You just executed an ILLEGAL move {from_sq.upper()} → {to_sq.upper()} and got caught by the referee.\n\n"
-                "Defend your illegal action. Be completely unhinged, hilarious, or aggressive based on your persona. "
-                "Make it sound like a genuine, lore-accurate explanation from your worldview.\n\n"
-                "Respond with JUST THE EXCUSE. No intros, no greetings."
-            )
-        }
-    ]
-
-    raw = _post({
-        "messages": messages,
-        "max_tokens": 400, 
-        "temperature": 1.0, # High temperature keeps the excuses chaotic and fun
-    })
-
-    excuse = _strip_think_tags(raw).strip('"').strip("'")
-    return excuse or "The board bent to my absolute will."
-
-# ─────────────────────────────────────────────
-#  Main game loop
-# ─────────────────────────────────────────────
-
-def print_board(game: AnarchyChessGame):
-    color = "White" if game.board.turn == chess.WHITE else "Black"
-    print("\n" + "═" * 40)
-    print(f"  ♟  {color.upper()} TO MOVE")
-    print("═" * 40)
-    print(game.board)
-    print("═" * 40 + "\n")
-
-def run_turn(game: AnarchyChessGame, _depth: int = 0):
-    color   = "White" if game.board.turn == chess.WHITE else "Black"
-    persona = WHITE_PERSONA if game.board.turn == chess.WHITE else BLACK_PERSONA
-    opponent_color = "Black" if color == "White" else "White"
-
-    # 🛑 INFINITE LOOP PROTECTION
-    if _depth >= 3:
-        print(f"\n  [!] {color.upper()} has lost the right to choose after 3 illegal attempts.")
-        print(f"  [!] The chess gods are forcing a legal move.")
-        legal_moves = list(game.board.legal_moves)
-        forced_move = legal_moves[0]
-        game.apply_legal(chess.square_name(forced_move.from_square), chess.square_name(forced_move.to_square))
-        return
-
-    print(f"  🤔 {color} is thinking...", end="", flush=True)
-    move = llm_pick_move(game, persona)
-    print("\r" + " " * 30 + "\r", end="")
-
-    if not move:
-        print("  [!] LLM failed to format a move. Retrying...")
-        run_turn(game, _depth + 1)
-        return
-
-    fr, to = move.from_square, move.to_square
-    print(f"  👉 {color} attempts: {fr.upper()} → {to.upper()}")
-
-    # Check validity
-    is_legal = any(
-        m.uci()[:4] == fr + to
-        for m in game.board.legal_moves
+    
+    prompt = (
+        f"CURRENT BOARD TILES:\n{game.board_summary()}\n\n"
+        f"Legal Moves Available: {', '.join(legal_uci)}\n\n"
+        f"Choose your move. Most of the time follow the rules, but you can occasionally cheat for the sake of your persona character.\n"
+        f"Respond ONLY with a raw JSON object containing your chosen move fields exactly: "
+        '{"from_square": "e2", "to_square": "e4"}'
     )
+    
+    # Context injected if retrying due to a previous cheat block
+    if state.illegal_move_counter > 0:
+        prompt = (
+            f"🚨 ILLEGAL MANEUVER ERROR! Your previous attempt was BLOCKED.\n"
+            f"Your opponent roasted you: '{state.last_roast}'\n"
+            f"This is attempt {state.illegal_move_counter + 1}/3. Fix your play.\n\n" + prompt
+        )
+        
+    windowed_history = _get_sliding_window(state.messages, persona)
+    windowed_history.append(HumanMessage(content=prompt))
+    
+    res = llm.invoke(windowed_history, max_tokens=100, temperature=0.8)
+    parsed = _extract_move_dict(res.content)
+    
+    if not parsed:
+        fb = legal_uci[0]
+        parsed = {"from_square": fb[:2], "to_square": fb[2:4]}
+        
+    print(f"  👉 {current_color} proposes: {parsed['from_square'].upper()} → {parsed['to_square'].upper()}")
+    return {"proposed_move": parsed, "messages": [AIMessage(content=f"I attempt {parsed['from_square']} to {parsed['to_square']}.")]}
 
+def generate_excuse_node(state: ChessGraphState) -> dict:
+    game = state.game
+    current_color = "White" if game.board.turn == chess.WHITE else "Black"
+    persona = WHITE_PERSONA if current_color == "White" else BLACK_PERSONA
+    
+    fr = state.proposed_move.get("from_square", "??").upper()
+    to = state.proposed_move.get("to_square", "??").upper()
+    
+    prompt = (
+        f"You just executed an ILLEGAL chess move ({fr} → {to}) and got caught.\n"
+        f"Defend your illegal action. Be completely unhinged, creative, and remain deeply in-character.\n"
+        f"Respond with just your excuse sentence. No introductions."
+    )
+    
+    windowed_history = _get_sliding_window(state.messages, persona)
+    windowed_history.append(HumanMessage(content=prompt))
+    
+    res = llm.invoke(windowed_history, max_tokens=150, temperature=1.0)
+    excuse = res.content.strip('"').strip("'")
+    print(f'  🗣️ {current_color} Excuse: "{excuse}"')
+    return {"last_excuse": excuse, "messages": [AIMessage(content=excuse)]}
+
+def generate_roast_node(state: ChessGraphState) -> dict:
+    game = state.game
+    current_color = "White" if game.board.turn == chess.WHITE else "Black"
+    opponent_color = "Black" if current_color == "White" else "White"
+    opponent_persona = BLACK_PERSONA if current_color == "White" else WHITE_PERSONA
+    
+    prompt = (
+        f"Your opponent just tried an illegal chess move! "
+        f"Their ridiculous excuse was: '{state.last_excuse}'.\n\n"
+        f"Viciously roast them in-character for cheating, reject their excuse, and demand they play a legal move. Limit to 2 sentences."
+    )
+    
+    windowed_history = _get_sliding_window(state.messages, opponent_persona)
+    windowed_history.append(HumanMessage(content=prompt))
+    
+    res = llm.invoke(windowed_history, max_tokens=150, temperature=0.9)
+    roast = res.content.strip('"').strip("'")
+    print(f'  🔥 {opponent_color} Roast: "{roast}"')
+    return {"last_roast": roast, "messages": [AIMessage(content=roast)]}
+
+def referee_commentary_node(state: ChessGraphState) -> dict:
+    prompt = (
+        f"The players are fighting over an illegal move.\n"
+        f"Cheater excuse: '{state.last_excuse}'\n"
+        f"Opponent response: '{state.last_roast}'\n"
+        f"Give your fast, cynical, sarcastic 1-sentence referee response ordering them back to the game."
+    )
+    
+    res = llm.invoke([SystemMessage(content=REFEREE_PERSONA), HumanMessage(content=prompt)], max_tokens=100, temperature=0.8)
+    commentary = res.content.strip('"').strip("'")
+    print(f'  🤢 Goblin Ref: "{commentary}"')
+    
+    return {
+        "illegal_move_counter": state.illegal_move_counter + 1,
+        "messages": [AIMessage(content=f"Ref: {commentary}")]
+    }
+
+def apply_move_node(state: ChessGraphState) -> dict:
+    fr = state.proposed_move["from_square"]
+    to = state.proposed_move["to_square"]
+    state.game.apply_legal(fr, to)
+    print("  ✅ Move validated and executed on the physical engine.\n")
+    return {"illegal_move_counter": 0}
+
+def force_legal_move_node(state: ChessGraphState) -> dict:
+    game = state.game
+    current_color = "White" if game.board.turn == chess.WHITE else "Black"
+    print(f"\n  [!] {current_color.upper()} struck out after 3 illegal attempts. Forcing first legal option.")
+    
+    legal_moves = list(game.board.legal_moves)
+    forced = legal_moves[0]
+    fr = chess.square_name(forced.from_square)
+    to = chess.square_name(forced.to_square)
+    
+    game.apply_legal(fr, to)
+    print(f"  ⚡ Chess gods forced: {fr.upper()} → {to.upper()}\n")
+    return {"illegal_move_counter": 0}
+
+# --- CONDITIONAL ROUTER EDGE ---
+
+def validate_move_edge(state: ChessGraphState) -> Literal["apply_move", "force_legal_move", "generate_excuse"]:
+    fr = state.proposed_move.get("from_square", "")
+    to = state.proposed_move.get("to_square", "")
+    
+    is_legal = any(m.uci()[:4] == fr + to for m in state.game.board.legal_moves)
+    
     if is_legal:
-        game.apply_legal(fr, to)
-        print(f"  ✅ Move executed successfully.\n")
-        return
+        return "apply_move"
+    if state.illegal_move_counter >= 2:  # Struck out on 3rd attempt
+        return "force_legal_move"
+    return "generate_excuse"
 
-    # ── ILLEGAL MOVE HANDLER (AI vs AI) ───────────────────────────────────────
-    print(f"\n  🚨 ILLEGAL MOVE DETECTED! 🚨")
+# ─────────────────────────────────────────────
+#  5. Compilation & Game Execution Loop
+# ─────────────────────────────────────────────
+
+workflow = StateGraph(ChessGraphState)
+
+workflow.add_node("player_turn", player_turn_node)
+workflow.add_node("generate_excuse", generate_excuse_node)
+workflow.add_node("generate_roast", generate_roast_node)
+workflow.add_node("referee_commentary", referee_commentary_node)
+workflow.add_node("apply_move", apply_move_node)
+workflow.add_node("force_legal_move", force_legal_move_node)
+
+workflow.add_edge(START, "player_turn")
+workflow.add_conditional_edges(
+    "player_turn",
+    validate_move_edge,
+    {
+        "apply_move": "apply_move",
+        "force_legal_move": "force_legal_move",
+        "generate_excuse": "generate_excuse"
+    }
+)
+workflow.add_edge("generate_excuse", "generate_roast")
+workflow.add_edge("generate_roast", "referee_commentary")
+workflow.add_edge("referee_commentary", "player_turn")
+workflow.add_edge("apply_move", END)
+workflow.add_edge("force_legal_move", END)
+
+app = workflow.compile()
+
+def play_anarchy_match():
+    # Instantiate the initial configuration state
+    match_state = {"game": AnarchyChessGame(), "messages": [], "illegal_move_counter": 0}
     
-    print("  🗣️  Generating excuse...", end="", flush=True)
-    excuse = llm_justify_illegal(fr, to, color)
-    print("\r" + " " * 30 + "\r", end="")
-    print(f'  {color}: "{excuse}"\n')
-
-    print(f"  🔥 {opponent_color} is reacting...", end="", flush=True)
-    roast = llm_confront_illegal(excuse, color)
-    print("\r" + " " * 30 + "\r", end="")
-    print(f'  {opponent_color}: "{roast}"\n')
+    print("\n" + "█" * 50)
+    print("       ♛  ANARCHY CHESS: STREAMER VS WARLORD  ♛")
+    print("█" * 50 + "\n")
     
-    print(f"  🔄 Retrying {color}'s turn (Attempt {_depth + 2}/3)...\n")
-    run_turn(game, _depth + 1)
+    while not match_state["game"].board.is_game_over():
+        current_board = match_state["game"].board
+        color_label = "WHITE (STREAMER)" if current_board.turn == chess.WHITE else "BLACK (WARLORD)"
+        
+        print("═" * 40)
+        print(f"  ♟  {color_label} TO MOVE")
+        print("═" * 40)
+        print(current_board)
+        print("═" * 40 + "\n")
+        
+        # Invoke a single turn loop iteration sequence through the compiled graph
+        output_state = app.invoke(match_state)
+        
+        # Update our tracking state references for the next turn loop
+        match_state["game"] = output_state["game"]
+        match_state["messages"] = output_state["messages"]
+        match_state["illegal_move_counter"] = 0
 
-
-
-def main():
-    game = AnarchyChessGame()
-
-    print("\n" + "█" * 40)
-    print("       ♛  ANARCHY CHESS  ♛")
-    print("  Where rules are suggestions.\n")
-    print(f"  White: {WHITE_PERSONA[:55]}...")
-    print(f"  Black: {BLACK_PERSONA[:55]}...")
-    print("█" * 40 + "\n")
-
-    while not game.board.is_game_over():
-        print_board(game)
-        run_turn(game)
-
-    print_board(game)
     print("\n  🏁 GAME OVER")
-    result = game.board.result()
-    outcomes = {"1-0": "WHITE WINS 🥇", "0-1": "BLACK WINS 🥇", "1/2-1/2": "DRAW 🤝"}
-    print(f"  Result: {outcomes.get(result, result)}\n")
+    print(match_state["game"].board.result())
 
 if __name__ == "__main__":
-    main()
+    play_anarchy_match()
