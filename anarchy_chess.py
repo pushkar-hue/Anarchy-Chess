@@ -5,6 +5,7 @@ import re
 import random
 from pydantic import BaseModel, Field
 
+
 # ─────────────────────────────────────────────
 #  Models
 # ─────────────────────────────────────────────
@@ -14,6 +15,20 @@ class MoveResponse(BaseModel):
     from_square: str
     to_square: str
 
+class NormalTurnResponse(BaseModel):
+    from_square: str
+    to_square: str
+    message: str = Field(description="In-character trash talk regarding the move or opponent's last message.")
+
+class ConfrontationResponse(BaseModel):
+    message: str = Field(description="Call out the opponent for their illegal move.")
+
+class ExcuseResponse(BaseModel):
+    message: str = Field(description="Justify why your illegal move makes perfect sense.")
+
+class JudgmentResponse(BaseModel):
+    decision: str = Field(description="Strictly 'ACCEPT' or 'REJECT'")
+    message: str = Field(description="Your final verdict and accompanying trash talk.")
 # ─────────────────────────────────────────────
 #  Config
 # ─────────────────────────────────────────────
@@ -115,6 +130,40 @@ class AnarchyChessGame:
 #  API helpers
 # ─────────────────────────────────────────────
 
+def llm_confront_illegal(excuse: str, cheater_color: str) -> str:
+    # If the cheater was White, Black is doing the confronting (and vice versa)
+    if cheater_color == "White":
+        confronter_persona = BLACK_PERSONA
+        cheater_title = "Astrophysicist"
+    else:
+        confronter_persona = WHITE_PERSONA
+        cheater_title = "Medieval Warlord"
+
+    messages = [
+        {
+            "role": "system",
+            "content": confronter_persona
+        },
+        {
+            "role": "user",
+            "content": (
+                f"Your opponent (the {cheater_title}) just tried to play an illegal chess move! "
+                f"When caught, their excuse was: '{excuse}'.\n\n"
+                "In character, viciously roast them for cheating, reject their nonsense excuse, "
+                "and demand they play a real, legal move. Keep it brutal and under 3 sentences."
+            )
+        }
+    ]
+
+    raw = _post({
+        "messages": messages,
+        "max_tokens": 150, 
+        "temperature": 0.9, 
+    })
+
+    roast = _strip_think_tags(raw).strip('"').strip("'")
+    return roast or "Play by the rules, coward!"
+
 def _post(payload: dict) -> str:
     try:
         r = requests.post(URL, json=payload, timeout=120)
@@ -190,9 +239,8 @@ def llm_pick_move(game: AnarchyChessGame, persona: str) -> MoveResponse | None:
             "role": "system",
             "content": (
                 f"{persona}\n\n"
-                "You are playing Anarchy Chess. Most of the time, pick a logical, strategic LEGAL move "
-                "from the provided list. However, if the moment feels right, you MAY occasionally "
-                "invent an illegal move.\n\n"
+                "You are playing chess. 90% of the time, pick a logical, strategic LEGAL move from the provided list."
+                "However, if the moment feels incredibly right, you may occasionally invent an illegal move just to mess with your opponent"
                 "CRITICAL: You must respond ONLY with a raw JSON object containing your chosen move. "
                 "Do not add markdown backticks, explanations, or extra text. Format exactly as:\n"
                 '{"from_square": "e2", "to_square": "e4"}'
@@ -270,23 +318,30 @@ def print_board(game: AnarchyChessGame):
     print("═" * 40 + "\n")
 
 def run_turn(game: AnarchyChessGame, _depth: int = 0):
-    if _depth > 3:
-        print("  [!] Too many retries, skipping turn.\n")
-        return
-
     color   = "White" if game.board.turn == chess.WHITE else "Black"
     persona = WHITE_PERSONA if game.board.turn == chess.WHITE else BLACK_PERSONA
+    opponent_color = "Black" if color == "White" else "White"
 
-    print("  🤔 Thinking...", end="", flush=True)
+    # 🛑 INFINITE LOOP PROTECTION
+    if _depth >= 3:
+        print(f"\n  [!] {color.upper()} has lost the right to choose after 3 illegal attempts.")
+        print(f"  [!] The chess gods are forcing a legal move.")
+        legal_moves = list(game.board.legal_moves)
+        forced_move = legal_moves[0]
+        game.apply_legal(chess.square_name(forced_move.from_square), chess.square_name(forced_move.to_square))
+        return
+
+    print(f"  🤔 {color} is thinking...", end="", flush=True)
     move = llm_pick_move(game, persona)
-    print("\r" + " " * 20 + "\r", end="")
+    print("\r" + " " * 30 + "\r", end="")
 
     if not move:
-        print("  [!] LLM failed entirely. Skipping turn.")
+        print("  [!] LLM failed to format a move. Retrying...")
+        run_turn(game, _depth + 1)
         return
 
     fr, to = move.from_square, move.to_square
-    print(f"  👉 {color} proposes: {fr.upper()} → {to.upper()}")
+    print(f"  👉 {color} attempts: {fr.upper()} → {to.upper()}")
 
     # Check validity
     is_legal = any(
@@ -296,40 +351,26 @@ def run_turn(game: AnarchyChessGame, _depth: int = 0):
 
     if is_legal:
         game.apply_legal(fr, to)
-        print(f"  ✅ Legal move executed.\n")
+        print(f"  ✅ Move executed successfully.\n")
         return
 
-    # ── ILLEGAL MOVE HANDLER ──────────────────────────────────────────────────
+    # ── ILLEGAL MOVE HANDLER (AI vs AI) ───────────────────────────────────────
     print(f"\n  🚨 ILLEGAL MOVE DETECTED! 🚨")
-    print("  Interrogating perpetrator for their cosmic/tactical rationale...\n")
     
-    print("  🤔 Formulating defense...", end="", flush=True)
+    print("  🗣️  Generating excuse...", end="", flush=True)
     excuse = llm_justify_illegal(fr, to, color)
-    print("\r" + " " * 25 + "\r", end="")
+    print("\r" + " " * 30 + "\r", end="")
+    print(f'  {color}: "{excuse}"\n')
+
+    print(f"  🔥 {opponent_color} is reacting...", end="", flush=True)
+    roast = llm_confront_illegal(excuse, color)
+    print("\r" + " " * 30 + "\r", end="")
+    print(f'  {opponent_color}: "{roast}"\n')
     
-    print(f'  {color.upper()} says: "{excuse}"\n')
+    print(f"  🔄 Retrying {color}'s turn (Attempt {_depth + 2}/3)...\n")
+    run_turn(game, _depth + 1)
 
-    print("  ┌─ REFEREE, YOUR CALL ────────────────────────────┐")
-    print("  │  [1] Accept Excuse (Allow the illegal move)     │")
-    print("  │  [2] Call BS (Reject and force a new move choice)│")
-    print("  └─────────────────────────────────────────────────┘")
 
-    while True:
-        choice = input("  Your call: ").strip()
-        if choice in ("1", "2"):
-            break
-        print("  Please enter 1 or 2.")
-
-    if choice == "1":
-        success = game.apply_illegal(fr, to)
-        if success:
-            print(f"  🌀 Reality bent. Move processed.\n")
-        else:
-            print(f"  🚫 Ultimate reality rejection! Forcing a different selection...\n")
-            run_turn(game, _depth + 1)
-    else:
-        print(f"  🚫 Bullshit called! Forcing a different selection...\n")
-        run_turn(game, _depth + 1)
 
 def main():
     game = AnarchyChessGame()
